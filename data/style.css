@@ -1,0 +1,135 @@
+@charset "utf-8";
+/* CSS Document */
+
+.link { font-family: Verdana, Arial; font-size: 12px; color: #FFFFFF; text-decoration: none}
+.link:Hover { font-family: Verdana, Arial; font-size: 12px; color: #FFFF00; text-decoration: none}
+.wlink { font-family: Verdana, Arial; font-size: 12px; color: #0000FF; text-decoration: none}
+.wlink:Hover { font-family: Verdana, Arial; font-size: 12px; color: #FF0000; text-decoration: none}
+.vlink { font-family: Verdana, Arial; font-size: 12px; color: #FF0000; text-decoration: none}
+.vlink:Hover { font-family: Verdana, Arial; font-size: 12px; color: #FF00FF; text-decoration: none}
+.rlink { font-family: Verdana, Arial; font-size: 12px; color: red; text-decoration: none}
+.rlink:Hover { font-family: Verdana, Arial; font-size: 12px; color: orange; text-decoration: none}
+.glink { font-family: Verdana, Arial; font-size: 12px; color: green; text-decoration: none}
+.glink:Hover { font-family: Verdana, Arial; font-size: 12px; color: blue; text-decoration: none}
+.blink { font-family: Verdana, Arial; font-size: 14px; color: black; text-decoration: none}
+.blink:Hover { font-family: Verdana, Arial; font-size: 14px; color: red; text-decoration: none}
+.greylink { font-family: Verdana, Arial; font-size: 12px; color: grey; text-decoration: none}
+.greylink:Hover { font-family: Verdana, Arial; font-size: 12px; color: black; text-decoration: none}
+
+.myDiv {
+	border: 1px outset blue;
+	width: 400px;
+	height: 100px;
+	background-color: white;    
+	text-align: left;
+}
+
+input {
+	border:0;
+}
+
+img {
+	width: 30px;
+	height: 30px;
+}
+
+body {
+	margin:1 auto;
+	padding:0;
+	text-align:left;
+	}
+	
+footer {
+	margin:auto;
+	color:grey;
+	padding:10px;
+	font-size:0.6em;
+	}
+
+section {
+	border:1px solid grey;
+	margin:5px;
+	padding:4px;
+	margin:0 auto;
+	font-size:40px;
+	color:#6495ED;
+	width:80%;
+	height:80%;
+	}
+
+header {
+	font-size:2em;
+	}
+
+div.menu {
+	margin:auto;
+	font-size:100%;
+	width:90%;
+	}
+
+table,tr,td,th {
+	margin:0 auto;		/* 1 em */
+	border-collapse:collapse;
+	vertical-align:middle;
+	font-size:1.0em;
+	padding:3px 8px;			// vert horiz
+	}
+
+th { 
+	border:1px solid #CCCCFF;
+	color:#FFFFFF;
+	background-color:#6495ED;
+	}
+
+.log {
+	text-align:left;
+	}
+
+.mid {
+	width:100%;
+	font-family:Times;
+	font-size:1em;
+	border-radius:30px;
+	}
+
+.mid:active {
+	background-color:#2B60DE;
+	color:white;
+	}
+
+.button {
+    width:100px;
+    height:30px;
+ 	vertical-align:middle;
+	-moz-box-shadow:inset 0 1px 0 0 #fff;
+    -webkit-box-shadow:inset 0 1px 0 0 #fff;
+    box-shadow:inset 0 1px 0 0 #fff;
+    background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #ffffff), color-stop(1, #d1d1d1) );
+    background:-moz-linear-gradient( center top, #ffffff 5%, #d1d1d1 100% );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#d1d1d1');
+    background-color:#fff;
+    -moz-border-radius:6px;
+    -webkit-border-radius:6px;
+    border-radius:6px;
+    border:1px solid #dcdcdc;
+    display:inline-block;
+    color:#777;
+    font-family:Helvetica;
+    font-size:15px;
+    font-weight:700;
+    padding:6px 24px;
+    text-decoration:none;
+    text-shadow:1px 1px 0 #fff
+}
+
+.button:hover {
+    background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #d1d1d1), color-stop(1, #ffffff) );
+    background:-moz-linear-gradient( center top, #d1d1d1 5%, #ffffff 100% );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#d1d1d1', endColorstr='#ffffff');
+    background-color:#d1d1d1
+}
+
+.button:active {
+    position:relative;
+    top:1px
+}

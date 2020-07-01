@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULETITLE% Module name</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+</head>
+<body>
+	<center>
+	<h1><font color=blue><b>%MODULETITLE%</b></font></h1>
+	<form method='post' id='admin' action='/adminexec.html'>
+		<table border=1>
+			<tr><th colspan=2><font color=yellow><b>App Admin Password</b></font></th></tr>
+			<tr><td align=right>Password</td><td align=left><input name='password' length=32 value='%ADMIN_PASSWD%'> (at least 8 chars)</td></tr>
+		</table>
+		<input type='hidden' name='action' id='action' value=''>
+	</form>
+	<br><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+			<td align=center><a type="submit" class='button' onclick='submitParam("admin", "action", "Remove");'>Remove</td>
+			<td align=center><a type="submit" class='button' onclick='submitParam("admin", "action", "OK");'>OK</td>
+		</tr>
+	</table>
+	</center>
+</body>
+</html>

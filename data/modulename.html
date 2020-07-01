@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULETITLE% Module name</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+</head>
+<body>
+	<center>
+	<h1><font color=blue><b>%MODULETITLE%</b></font></h1>
+	<form method='post' id='modulename' action='/modulenameexec.html'>
+		<table border=1>
+			<tr><th colspan=2><font color=yellow><b>Modify Module Name</b></font></th></tr>
+			<tr><td align=right>Module Name</td><td align=left><input name='name' length=32 value='%MODULENAME%'> </td></tr>
+		</table>
+	</form>
+	<br><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+			<td align=center><a type="submit" class='button' onclick='mysubmit("modulename");'>OK</td>
+		</tr>
+	</table>
+	</center>
+</body>
+</html>

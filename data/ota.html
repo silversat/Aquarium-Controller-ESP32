@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULETITLE% - OTA switch</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+</head>
+<body>
+	<center>
+	<h1><font color=blue><b>%MODULETITLE%</b></font></h1>
+	<form method='post' id='otaexec' action='/otaexec.html'>
+		<table border=0>
+			<tr><th colspan=2><font color=yellow>OTA switch</font></th></tr>
+			<tr>
+				<td align=right>Disabled <input type='radio' name='ota' value=%RADIO_OTA_0%></td>
+				<td align=left><input type='radio' name='ota' value=%RADIO_OTA_1%> Enabled</td>
+			</tr><tr>
+				<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+				<td align=center><a type="submit" class='button' onclick='mysubmit("otaexec");'>OK</td>
+			</tr>
+		</table>
+	</form>
+	</center>
+</body>
+</html>

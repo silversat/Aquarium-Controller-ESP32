@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULETITLE% - Date & Time</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+</head>
+<body>
+	<center>
+	<h1><font color=blue><b>%MODULETITLE%</b></font></h1>
+	<form method='post' id='datetime' action='/datetimeexec.html'>
+		<table border=1>
+			<tr><th colspan=2><font color=yellow>Date & Time</font></th></tr>
+			<tr>
+				<th align=right>NTP requests</th>
+				<td align=center>
+					<input type='radio' name='ntpswitch' value=%RADIO_NTP_0%> Disabled 
+					<input type='radio' name='ntpswitch' value=%RADIO_NTP_1%> Enabled
+				</td>
+			</tr>
+			
+			<tr>
+				<th align=right>Date</th>
+				<td align=left><input name='date' type='date' value='%DATE_SET%'></td>
+			</tr>
+
+			<tr>
+				<th align=right>Time</th>
+				<td align=left><input name='time' type='time' value='%TIME%'></td>
+			</tr>
+
+			<tr>
+				<th align=right>NTP Server</th>
+				<td align=left><input name='ntp_srv' length=32 value='%NTP_SERVER%'>
+			</tr>
+				
+			<tr>
+				<th align=right>NTP server poll period</th>
+				<td align=left><input name='ntppoll' length=2 size=2 value='%NTP_PERIOD%'>mins (rtc adjust period)</td>
+			</tr>
+		</table>
+	</form>
+	<br><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+			<td align=center><a type="button" href="/datetime.html" class='button'>Refresh</a></td>
+			<td align=center><a type="submit" class='button' onclick='mysubmit("datetime");'>OK</a></td>
+		</tr>
+	</table>
+	</center>
+</body>
+</html>

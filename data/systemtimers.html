@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULETITLE% System Timers</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+</head>
+<body>
+	<center>
+	<h1><font color=blue><b>%MODULETITLE%</b></font></h1>
+	<form method='post' id='systemtimers' action='/systemtimersexec.html'>
+		<table border=1>
+			<tr><th colspan=2><font color=yellow><b>System Timers</b></font></th></tr>
+			<tr><td align=right>AP reset</td><td align=left><input name='restimer' length=3 value='%APRESET%'> secs</td></tr>
+		</table>
+	</form>
+	<br><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+			<td align=center><a type="submit" class='button' onclick='mysubmit("systemtimers");'>OK</td>
+		</tr>
+	</table>
+	</center>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<head>
+<script type='text/javascript'>
+	var s_url = '';
+	function init() {
+		s_url = 'ws://'+window.location.host+window.location.pathname;
+		try {
+			ws = new WebSocket(s_url,protocol);
+			ws.onmessage = function(evt) {
+				parseMessage(evt.data);
+			};
+			ws.onerror = function(evt) {
+			};
+			ws.onclose = function() {
+				init(s_protocol);
+			};
+			ws.onopen = function() {
+			};
+		} catch(exception) {
+		}
+	}
+
+	function $(id) {
+		return document.getElementById(id);
+	}
+	
+	function parseMessage( msg ) {
+		if(msg.substr(0,4).toLowerCase() == 'sens') {
+			var param,key,value,span;
+			var sep = msg.indexOf('=');
+			var idx = msg.substr(4,sep-4);
+			msg = msg.substr(++sep);
+			sep = msg.indexOf(';');
+			while(msg.length > 0) {
+				param = msg.substr(0,sep);
+				key = param.substr(0,1);
+				value = param.substr(1);
+				if(key=='S') idx='';
+				span = $(key+idx);
+				span.textContent = value;
+				msg = msg.substr(++sep);
+				sep = msg.indexOf(';');
+			}
+		}
+	}
+</script></head>
+<body onload='init();'>
+	<h1>%MODULENAME% - Home page</h1>
+	<h2>Current values:</h2>
+	<br>Date: %DATE%
+	<br>Time: %TIME%
+	<br>Temperature average: %TEMP%
+	<br>Daylight average: %DLAVG%
+	<br>Lunar light: %LLAVG%
+	<br>Water Level: %WATERLEVEL%
+	<br>Water PH: %WATERPH%
+	<br>Water EC: %WATEREC%
+	<br>Water Turbidity: %WATERTURB%
+	<br>
+	<br>Rele 1 is switched %RELE1%
+	<br>Rele 2 is switched %RELE2%
+	<br>Rele 3 is switched %RELE3%
+	<br>Rele 4 is switched %RELE4%
+	<br>
+	<br><a href='/'>Refresh</a>
+	<br>
+	<br><a href='/config'>Configuration</a>
+</body>
+</html>

@@ -1,0 +1,72 @@
+
+
+USB			pin		description		Color
+---------------------------------------------
+			1						white
+			2		Vdd				red
+			3		Gnd				black
+			4						green
+			5						shield
+			6	
+
+DISPLAY		pin		description		Color			Arduino pin
+-----------------------------------------------------------------
+			1		Gnd				Black
+			2		sda				Red (small)		20
+			3		scl				Green			21
+			4		IR				Yellow			49
+			5		Beeper			White			11
+			6		Vdd				Red (big)
+			
+LEV/TURB	pin		description		Color			Arduino pin
+-----------------------------------------------------------------
+			1		Gnd				Black
+			2		Turbidity		Yellow			A4
+			3		-
+			4		Level			Green			12
+			5		-
+			6		Vdd				Red (big)
+			
+TEMP1/2		pin		description		Color			Arduino pin
+-----------------------------------------------------------------
+			1		Gnd				Black
+			2		signal			Yellow			46
+			3		Vdd				Red
+
+POWER 5v	pin		description		Color			Arduino pin
+-----------------------------------------------------------------
+			1		Gnd				Black
+			2		Vdd (9-16vcc)	Red
+
+ALARM LINK	pin		description		Color
+-----------------------------------------------------------------
+			1		GND				Black (big)
+			2		TX				Yellow
+			3		RX				Green
+			4		spare			White
+			5		spare			Red
+			6		Vdd				Red (big)
+
+WHITE LEDs	pin		description		PWM Board
+-----------------------------------------------------------------
+			1		WW leds -		OUT 1
+			2		WW leds +		
+			3		NW leds -		OUT 2
+			4		NW leds +		
+			5		CW leds -		OUT 3
+			6		CW leds +		
+
+COLOR LEDs	pin		description		PWM Board
+-----------------------------------------------------------------
+			1		RED leds -		OUT 4
+			2		RED leds +		
+			3		BLUE leds +		OUT 5
+			4		BLUE leds -		
+
+LED POWER	pin		description		PWM Board
+-----------------------------------------------------------------
+			1		GND				VDC -
+			2		Vcc (36v) +		VDC +
+			3		Vcc (36v) +		VDC +
+			4		GND				VDC -
+

@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULENAME% - Run Mode</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+</head>
+<body>
+	<center>
+	<h1><font color=blue><b>%MODULENAME%</b></font></h1>
+	<form method='post' id='runmode' action='/runmodeexec.html'>
+		<table border=0>
+			<tr><th colspan=2><font color=yellow>Run Mode</font></th></tr>
+			<tr>
+				<td align=right>Normal <input type='radio' name='runmode' value=%RADIO_RUN_0%></td>
+				<td align=left><input type='radio' name='runmode' value=%RADIO_RUN_1%> Fast</td>
+			</tr><tr>
+				<td align=center><a type="button" class='button' onmousedown='buttonAction("Dec");' ontouchstart='buttonAction("Dec");'>Hour Dec</td>
+				<td align=center><a type="button" class='button' onmousedown='buttonAction("Inc");' ontouchstart='buttonAction("Inc");'>Hour Inc</td>
+			</tr>
+		</table>
+	</form>
+	<br><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+			<td align=center><a type="submit" class='button' onclick='mysubmit("runmode");'>OK</td>
+		</tr>
+	</table>
+	</center>
+</body>
+</html>

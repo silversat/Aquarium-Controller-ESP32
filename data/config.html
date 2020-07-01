@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>%MODULETITLE% Module config</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+	<script type="text/javascript" src="ws_scripts.js"></script>
+</head>
+<body onload="wsinit('config');">
+	<center>
+	<h1><font color='blue'>%MODULETITLE%</font></h1>
+	<table border=1>
+		<tr><th colspan=3><font color=yellow><b>Configuration</b></font></th></tr>
+		<tr><th align=right>Firmware version</th><td align=left>%VERSION%</td><td><img src="blank.jpg"></td></tr>
+		<tr><th align=right>Network</th><td align=left>%NETWORK%</td><td><a href="/ssid.html"><img src="modify.jpg"></a></td></tr>
+		<tr><th align=right>Module name</th><td align=left>%MODULENAME%</td><td><a href="/modulename.html"><img src="modify.jpg"></a></td></tr>
+		<tr><th align=right>AP reset timer</th><td align=left>%APRESET% secs</td><td><a href="/systemtimers.html"><img src="modify.jpg"></a></td></tr>
+		<tr><th align=right>OTA switch</th><td align=left>%OTASWITCH%</td><td><a href="/ota.html"><img src="modify.jpg"></a></td></tr>
+		<tr><th align=right>Date</th><td align=left id=date>%DATE%</td><td rowspan=5><a href="/datetime.html"><img src="modify.jpg"></a></td></tr>
+		<tr><th align=right>Time</th><td align=left id=time>%TIME%</td></tr>
+		<tr><th align=right>NTP client</th><td align=left>%NTP_ENABLE%</td></tr>
+		<tr><th align=right>NTP server</th><td align=left>%NTP_SERVER%</td></tr>
+		<tr><th align=right>NTP refresh period</th><td align=left>%NTP_PERIOD% mins</td></tr>
+		<tr><th align=right>Run mode</th><td align=left>%RUNMODE%</td><td><a href="/runmode.html"><img src="modify.jpg"></a></td></tr>
+		<tr><th align=right>Water Temperature</th><td align=left>%WATER_TEMP% [%WATER_TEMP_SET%]</td><td><a href="/temperature.html"><img src="modify.jpg"></a></td></tr>
+	</table><br>
+	
+	<table border=1><tr><th colspan=10 align=center><font color=yellow>Lights parameters</font></th></tr>
+		<tr align=center><th colspan=2>Light</th><th colspan=2>Sunrise</th><th colspan=2>Sunset</th><th rowspan=2>Current<br>Status</th><th rowspan=2>Fading</th><th rowspan=2>Mode</th><th rowspan=2>PWM<br>resolution</th></tr>
+		<tr align=center><th>Number</th><th>Name</th><th>begin</th><th>end</th><th>begin</th><th>end</th></tr>
+		<tr><td align=center>1</td><td align=left><font color=blue>%LIGHT_DESC_0%</font></td><td align=center>%LIGHT_ON_0%</td><td align=center>%LIGHT_FA_0%</td><td align=center>%LIGHT_IT_0%</td><td align=center>%LIGHT_OFF_0%</td><td align=center id=light0>%LIGHT_STATUS_0%</td><td align=center>%LIGHT_FAD_0%</td><td align=center>%LIGHT_MODE_0%</td><td align=right>%LIGHT_PWM_0%</td></tr>
+		<tr><td align=center>2</td><td align=left><font color=blue>%LIGHT_DESC_1%</font></td><td align=center>%LIGHT_ON_1%</td><td align=center>%LIGHT_FA_1%</td><td align=center>%LIGHT_IT_1%</td><td align=center>%LIGHT_OFF_1%</td><td align=center id=light1>%LIGHT_STATUS_1%</td><td align=center>%LIGHT_FAD_1%</td><td align=center>%LIGHT_MODE_1%</td><td align=right>%LIGHT_PWM_1%</td></tr>
+		<tr><td align=center>3</td><td align=left><font color=blue>%LIGHT_DESC_2%</font></td><td align=center>%LIGHT_ON_2%</td><td align=center>%LIGHT_FA_2%</td><td align=center>%LIGHT_IT_2%</td><td align=center>%LIGHT_OFF_2%</td><td align=center id=light2>%LIGHT_STATUS_2%</td><td align=center>%LIGHT_FAD_2%</td><td align=center>%LIGHT_MODE_2%</td><td align=right>%LIGHT_PWM_2%</td></tr>
+		<tr><td align=center>4</td><td align=left><font color=blue>%LIGHT_DESC_3%</font></td><td align=center>%LIGHT_ON_3%</td><td align=center>%LIGHT_FA_3%</td><td align=center>%LIGHT_IT_3%</td><td align=center>%LIGHT_OFF_3%</td><td align=center id=light3>%LIGHT_STATUS_3%</td><td align=center>%LIGHT_FAD_3%</td><td align=center>%LIGHT_MODE_3%</td><td align=right>%LIGHT_PWM_3%</td></tr>
+		<tr><td align=center>5</td><td align=left><font color=blue>%LIGHT_DESC_4%</font></td><td align=center>%LIGHT_ON_4%</td><td align=center>%LIGHT_FA_4%</td><td align=center>%LIGHT_IT_4%</td><td align=center>%LIGHT_OFF_4%</td><td align=center id=light4>%LIGHT_STATUS_4%</td><td align=center>%LIGHT_FAD_4%</td><td align=center>%LIGHT_MODE_4%</td><td align=right>%LIGHT_PWM_4%</td></tr>
+	</table><br>
+
+	<table border=0><tr>
+		<td align=center><a type="button" href="/admin.html" class='button'>AP Admin Password</a></td>
+		<td align=center><a type="button" href="/lightsparams.html" class='button'>Lights Parameters</a></td>
+		<td align=center><a type="button" href="/lightsdispvalues.html" class='button'>Current Lights Values</a></td>
+		<td align=center><a type="button" href="/restart.html" class='button'>Module Restart</a></td>
+		<td align=center></td>
+	</tr></table><br>
+	
+	<table border=0><tr>
+		<td align=center><a type="button" href="/" class='button'>Home</a></td>
+		<td align=center><a type="button" href="/config.html" class='button'>Refresh</a></td>
+	</tr></table>
+	</center>
+	<!--br><div id = "log"></div-->
+</body>
+</html>

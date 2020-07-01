@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULETITLE% Web Server</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+</head>
+<body>
+	<center>
+	<h1><font color='blue'>%MODULETITLE%</font></h1>
+	<form method='post' id='restart' action='/restartexec.html'>
+		<table border=0>
+			<tr><th colspan=2><font color=yellow><b>Module Restart</b></font></th></tr>
+			<tr><td align=right><input type='checkbox' name='clear' value='Clear'></td><td align=left>Clear nvram</td></tr>
+			<tr><td align=right><input type='checkbox' name='apmode' value='Force'></td><td align=left>Force next start in AP mode</td></tr>
+		</table>
+		<input type='hidden' name ='restart' value='Restart'>
+	</form>
+	<br><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+			<td align=center><a type="button" href="/restart.html" class='button'>Refresh</a></td>
+			<td align=center><a type="submit" class='button' onclick='mysubmit("restart");'>OK</td>
+		</tr>
+	</table>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULETITLE% - Current Lights Values</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+	<center>
+	<h1><font color='blue'>%MODULETITLE%</font></h1>
+	<br>
+	<table border=1>
+		<tr><th colspan=10><font color=yellow>Freezed Lights Values</font></th></tr>
+		<tr><th colspan=2>Light</th><th colspan=2>Sunrise</th><th colspan=2>Sunset</th><th rowspan=2>Current Status</th><th rowspan=2>Fading</th><th rowspan=2>Mode</th><th rowspan=2>PWM res</th></tr>
+		<tr><th>Number</th><th>Name</th><th>begin</th><th>end</th><th>begin</th><th>end</th></tr>
+		<tr><td align=center>1</td><td align=left><font color=blue>%LIGHT_DESC_0%</font></td><td align=right>%LIGHT_MIN_ON_0% (%LIGHT_ON_0%)</td><td align=right>%LIGHT_MIN_FA_0% (%LIGHT_FA_0%)</td><td align=right>%LIGHT_MIN_IT_0% (%LIGHT_IT_0%)</td><td align=right>%LIGHT_MIN_OFF_0% (%LIGHT_OFF_0%)</td><td align=center>%LIGHT_STATUS_0%</td><td align=right>%LIGHT_Min_FAD_0% (%LIGHT_FAD_0%)</td><td align=center>%LIGHT_MODE_0%</td><td align=right>%LIGHT_PWM_0%</td></tr>
+		<tr><td align=center>2</td><td align=left><font color=blue>%LIGHT_DESC_1%</font></td><td align=right>%LIGHT_MIN_ON_1% (%LIGHT_ON_1%)</td><td align=right>%LIGHT_MIN_FA_1% (%LIGHT_FA_1%)</td><td align=right>%LIGHT_MIN_IT_1% (%LIGHT_IT_1%)</td><td align=right>%LIGHT_MIN_OFF_1% (%LIGHT_OFF_1%)</td><td align=center>%LIGHT_STATUS_1%</td><td align=right>%LIGHT_Min_FAD_1% (%LIGHT_FAD_1%)</td><td align=center>%LIGHT_MODE_1%</td><td align=right>%LIGHT_PWM_1%</td></tr>
+		<tr><td align=center>3</td><td align=left><font color=blue>%LIGHT_DESC_2%</font></td><td align=right>%LIGHT_MIN_ON_2% (%LIGHT_ON_2%)</td><td align=right>%LIGHT_MIN_FA_2% (%LIGHT_FA_2%)</td><td align=right>%LIGHT_MIN_IT_2% (%LIGHT_IT_2%)</td><td align=right>%LIGHT_MIN_OFF_2% (%LIGHT_OFF_2%)</td><td align=center>%LIGHT_STATUS_2%</td><td align=right>%LIGHT_Min_FAD_2% (%LIGHT_FAD_2%)</td><td align=center>%LIGHT_MODE_2%</td><td align=right>%LIGHT_PWM_2%</td></tr>
+		<tr><td align=center>4</td><td align=left><font color=blue>%LIGHT_DESC_3%</font></td><td align=right>%LIGHT_MIN_ON_3% (%LIGHT_ON_3%)</td><td align=right>%LIGHT_MIN_FA_3% (%LIGHT_FA_3%)</td><td align=right>%LIGHT_MIN_IT_3% (%LIGHT_IT_3%)</td><td align=right>%LIGHT_MIN_OFF_3% (%LIGHT_OFF_3%)</td><td align=center>%LIGHT_STATUS_3%</td><td align=right>%LIGHT_Min_FAD_3% (%LIGHT_FAD_3%)</td><td align=center>%LIGHT_MODE_3%</td><td align=right>%LIGHT_PWM_3%</td></tr>
+		<tr><td align=center>5</td><td align=left><font color=blue>%LIGHT_DESC_4%</font></td><td align=right>%LIGHT_MIN_ON_4% (%LIGHT_ON_4%)</td><td align=right>%LIGHT_MIN_FA_4% (%LIGHT_FA_4%)</td><td align=right>%LIGHT_MIN_IT_4% (%LIGHT_IT_4%)</td><td align=right>%LIGHT_MIN_OFF_4% (%LIGHT_OFF_4%)</td><td align=center>%LIGHT_STATUS_4%</td><td align=right>%LIGHT_Min_FAD_4% (%LIGHT_FAD_4%)</td><td align=center>%LIGHT_MODE_4%</td><td align=right>%LIGHT_PWM_4%</td></tr>
+	</table>
+	<br>Freezed @ min: <font color=red>%TIME_MIN%</font> (%TIME%)
+	<br><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+			<td align=center><a type="button" href="/lightsdispvalues.html" class='button'>Refresh</a></td>
+		</tr>
+	</table>
+	</center>
+</body>
+</html>

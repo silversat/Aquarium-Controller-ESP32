@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+	<title>%MODULETITLE% - Lights Parameters</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+</head>
+<body>
+	<center>
+	<h1><font color=blue><b>%MODULETITLE%</b></font></h1>
+	<form method='post' id='lightsparams' action='/lightsparamsexec.html'>
+		<table border=1>
+			<tr><th colspan=10><font color=yellow>Lights Parameters</font></th></tr>
+			<tr><th colspan=2>Light</th><th rowspan=2>ON</th><th rowspan=2>OFF</th><th rowspan=2>Fading</th><th rowspan=2>Mode</th><th rowspan=2>PWM<br>resolution</th></tr>
+			<tr><th>Number</th><th>Name</th></tr>
+			<tr>
+				<td align=center>1</td>
+				<td align=left><font color=blue>%LIGHT_DESC_1%</font></td>
+				<td align=center><input name='houron0' type='time' value='%LIGHT_ON_0%'></td>
+				<td align=center><input name='houroff0' type='time' value='%LIGHT_OFF_0%'></td>
+				<td align=center><input name='hourfad0' type='time' value='%LIGHT_FAD_0%'></td>
+				<td align=center>
+					<input type='radio' name='type0' value=%RADIO_MODE_0_0%> Off 
+					<input type='radio' name='type0' value=%RADIO_MODE_1_0%> On 
+					<input type='radio' name='type0' value=%RADIO_MODE_2_0%> Auto
+				</td>
+				<td align=center><input name='pwmmax0' type='number' min='1' max='%PWM_RESOLUTION%' size='4' value='%LIGHT_PWM_0%'></td>
+			</tr>
+			<tr>
+				<td align=center>2</td>
+				<td align=left><font color=blue>%LIGHT_DESC_2%</font></td>
+				<td align=center><input name='houron1' type='time' value='%LIGHT_ON_1%'></td>
+				<td align=center><input name='houroff1' type='time' value='%LIGHT_OFF_1%'></td>
+				<td align=center><input name='hourfad1' type='time' value='%LIGHT_FAD_1%'></td>
+				<td align=center>
+					<input type='radio' name='type1' value=%RADIO_MODE_0_1%> Off
+					<input type='radio' name='type1' value=%RADIO_MODE_1_1%> On
+					<input type='radio' name='type1' value=%RADIO_MODE_2_1%> Auto
+				</td>
+				<td align=center><input name='pwmmax1' type='number' min='1' max=%PWM_RESOLUTION% size='4' value='%LIGHT_PWM_1%'></td>
+			</tr>
+			<tr>
+				<td align=center>3</td>
+				<td align=left><font color=blue>%LIGHT_DESC_2%</font></td>
+				<td align=center><input name='houron2' type='time' value='%LIGHT_ON_2%'></td>
+				<td align=center><input name='houroff2' type='time' value='%LIGHT_OFF_2%'></td>
+				<td align=center><input name='hourfad2' type='time' value='%LIGHT_FAD_2%'></td>
+				<td align=center>
+					<input type='radio' name='type2' value=%RADIO_MODE_0_2%> Off
+					<input type='radio' name='type2' value=%RADIO_MODE_1_2%> On
+					<input type='radio' name='type2' value=%RADIO_MODE_2_2%> Auto
+				</td>
+				<td align=center><input name='pwmmax2' type='number' min='1' max=%PWM_RESOLUTION% size='4' value='%LIGHT_PWM_2%'></td>
+			</tr>
+			<tr>
+				<td align=center>4</td>
+				<td align=left><font color=blue>%LIGHT_DESC_3%</font></td>
+				<td align=center><input name='houron3' type='time' value='%LIGHT_ON_3%'></td>
+				<td align=center><input name='houroff3' type='time' value='%LIGHT_OFF_3%'></td>
+				<td align=center><input name='hourfad3' type='time' value='%LIGHT_FAD_3%'></td>
+				<td align=center>
+					<input type='radio' name='type3' value=%RADIO_MODE_0_3%> Off
+					<input type='radio' name='type3' value=%RADIO_MODE_1_3%> On
+					<input type='radio' name='type3' value=%RADIO_MODE_2_3%> Auto
+				</td>
+				<td align=center><input name='pwmmax3' type='number' min='1' max=%PWM_RESOLUTION% size='4' value='%LIGHT_PWM_3%'></td>
+			</tr>
+			<tr>
+				<td align=center>5</td>
+				<td align=left><font color=blue>%LIGHT_DESC_4%</font></td>
+				<td align=center><input name='houron4' type='time' value='%LIGHT_ON_4%'></td>
+				<td align=center><input name='houroff4' type='time' value='%LIGHT_OFF_4%'></td>
+				<td align=center><input name='hourfad4' type='time' value='%LIGHT_FAD_4%'></td>
+				<td align=center>
+					<input type='radio' name='type4' value=%RADIO_MODE_0_4%> Off
+					<input type='radio' name='type4' value=%RADIO_MODE_1_4%> On
+					<input type='radio' name='type4' value=%RADIO_MODE_2_4%> Auto
+				</td>
+				<td align=center><input name='pwmmax4' type='number' min='1' max=%PWM_RESOLUTION% size='4' value='%LIGHT_PWM_4%'></td>
+			</tr>
+		</table>
+	</form>
+	<br><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
+			<td align=center><a type="button" href="/lightsparams.html" class='button'>Refresh</a></td>
+			<td align=center><a type="submit" class='button' onclick='mysubmit("lightsparams");'>OK</td>
+		</tr>
+	</table>
+	</center>
+</body>
+</html>
