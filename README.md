@@ -18,3 +18,6 @@
 <br>
 <br>		Compile with 	Board = ESP32 Dev Module
 <br>						Partition scheme = Default 4MB with spiffs (1.2MB App/1.5MB SPIFFS)
+<br><br> v.3.9.8
+<br> - corrected issue that made mDNS and OTA not working together
+<br>
