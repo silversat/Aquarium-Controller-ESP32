@@ -4,6 +4,9 @@
 
 #define	SERIAL_BAUD					115200	// seriale monitor port
 
+//============================ IR REMOTE CONFIGURATION
+#define IR_REMOTE_KEYBOARD		// ATTENTION !!! problems when using IR receiver and internal ESP32 simulated EEPROM (issue to be resolved)
+
 //============================ DISPLAY CONFIGURATION
 //#define OLED_32	0x3C					// if defined, 128x32 oled display is used, otherwise LCD 20x4
 //#define OLED_64	0x3C					// if defined, 128x64 oled display is used, otherwise LCD 20x4
@@ -31,6 +34,7 @@
 #define	MINUTES_PER_DAY				1440
 #define	MINUTES_PER_2DAYS			MINUTES_PER_DAY*2
 #define	SECONDS_PER_DAY				86400
+#define	WS_POLL_TIMER				1000
 #define	MILLISECS_PER_MIN			60000
 #define	NOT_AVAILABLE				" N/A "
 #define STARTING_MODE_NORMAL		0
@@ -155,7 +159,8 @@
 #define SAVE_OTA				7
 #define SAVE_TEMP				8
 #define SAVE_LIGHTS				9
-#define SAVE_SSID_PSW				10
+#define SAVE_SSID_PSW			10
+#define SAVE_CALIBRATION		11
 
 //
 //	EEPROM/NVRAM data position

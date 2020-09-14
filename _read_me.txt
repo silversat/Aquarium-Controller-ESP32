@@ -32,3 +32,8 @@ ESP32 WIFI KIT:
 - water turbidity sensor pin A4
 - water PH sensor pin A8
 - water EC sensor pin A11
+
+
+libreria ESPAsyncWebServer:
+- ripristinato metodo "const char* AsyncWebServerResponse::_responseCodeToString(int code)" (riga 40 di WebResponses.cpp)
+- switchate i REM alle righe 137/138 per ripristinare lo "Switching Protocol" che non funzionava su safari e altri browsers.

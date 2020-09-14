@@ -4,30 +4,49 @@
 	<title>%MODULENAME% - Run Mode</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" type="text/css" href="style.css">
-	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
+	<script language="javascript" type="text/javascript" src="js_basic.js"></script>
+	<script language="javascript" type="text/javascript" src="js_ws_common.js"></script>
 </head>
-<body>
+<body onload="wsinit();">
 	<center>
-	<h1><font color=blue><b>%MODULENAME%</b></font></h1>
-	<form method='post' id='runmode' action='/runmodeexec.html'>
+	<h1><img src="favicon.ico">&#9;<font color=blue><b>%MODULENAME%</b></font></h1>
+	<form method='post' id='runmodeform' action='/runmodeexec.html'>
 		<table border=0>
 			<tr><th colspan=2><font color=yellow>Run Mode</font></th></tr>
 			<tr>
-				<td align=right>Normal <input type='radio' name='runmode' value=%RADIO_RUN_0%></td>
-				<td align=left><input type='radio' name='runmode' value=%RADIO_RUN_1%> Fast</td>
+				<td align=right>Normal <input type='radio' name='runmode' value='normal'%RADIO_RUN_0%></td>
+				<td align=left><input type='radio' name='runmode' value='fast'%RADIO_RUN_1%> Fast</td>
 			</tr><tr>
-				<td align=center><a type="button" class='button' onmousedown='buttonAction("Dec");' ontouchstart='buttonAction("Dec");'>Hour Dec</td>
-				<td align=center><a type="button" class='button' onmousedown='buttonAction("Inc");' ontouchstart='buttonAction("Inc");'>Hour Inc</td>
+				<td align=center><input type="button" class='button' name='runtime' value='Dec'></td>
+				<td align=center><input type="button" class='button' name='runtime' value='Inc'></td>
 			</tr>
 		</table>
 	</form>
 	<br><br>
 	<table border=0>
 		<tr>
-			<td align=center><a type="button" href="/config.html" class='button'>Back</a></td>
-			<td align=center><a type="submit" class='button' onclick='mysubmit("runmode");'>OK</td>
+			<td colspan=2 align=center><a type="button" href="/config.html" class='button'>Back</a></td>
 		</tr>
 	</table>
 	</center>
+	<br><div id = "log"></div>
+	
+	<script type="text/javascript">
+		(function() {
+			var rbtn = document.forms['runmodeform'].elements['runmode'];
+			for(var j = 0; j < rbtn.length; j++) {
+				rbtn[j].onchange = function() {
+					ws.send("runmode="+this.value);
+				};
+			}
+			rbtn = document.forms['runmodeform'].elements['runtime'];
+			for(var j = 0; j < rbtn.length; j++) {
+				rbtn[j].onclick = function() {
+					ws.send("runtime="+this.value);
+				};
+			}
+		}());
+	</script>
+	
 </body>
 </html>

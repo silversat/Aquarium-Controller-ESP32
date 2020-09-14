@@ -22,6 +22,8 @@ unsigned long alarm_millis;
 #define DEFCON_5	5		// the lowest DEFCON (all right)
 int	defcon = DEFCON_5;
 
+#ifdef IR_REMOTE_KEYBOARD
+
 void WaterTemperatureSetup() { 
 	static bool confirm = true;
 	static float TempSet, TempOld;
@@ -85,6 +87,8 @@ void WaterTemperatureSetup() {
 		}
 	}
 }
+
+#endif
 
 float getSensorTemperature( uint8_t sensor ) {
 	float temp = NAN;

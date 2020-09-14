@@ -4,7 +4,6 @@
 
 typedef struct {
 	byte	id;
-//	char*	desc;
 	char	desc[20];
 } menu_type;
 
@@ -21,6 +20,8 @@ menu_type MainMenu[] = {
 //	{DS_SETUP_SPARE_4, "Spare item 4"},
 //	{DS_SETUP_SPARE_5, "Spare item 5"}
 };
+
+#ifdef IR_REMOTE_KEYBOARD
 
 void arrayRotateLeft( int arr[], int size ) {
     int temp = arr[0]; 
@@ -96,3 +97,5 @@ void ScorriMenu( menu_type arraymenu[], int size )  {
 		stampato = true;
 	}
 }
+
+#endif

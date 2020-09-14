@@ -5,16 +5,21 @@
 //		last rev.date 	@ SK_DATE
 //
 //		Original project by riciweb (http://forum.arduino.cc/index.php?topic=141419.0)
-//		modded by silversat (09/2013)
+//		remade by silversat (09/2013)
 //
-//		This controller has been developed onto an Arduino MEGA2560 board. 
+//		This controller has been developed onto an ESP32 board. 
 //		The hardware includes:
-//		- 8 relais parallel board (hobbycomponents.com)
+//		- 4/8 relais serial/parallel board (hobbycomponents.com)
 //		- I2C 20x4 LCD display or i2c OLED 32x128, 64x128, 128x128
-//		- uses esp32 internal RTC/nvram
-//		- one or two DS18b20 temperature sensor
+//		- uses esp32 internal RTC/nvram and/or DS3231/DS1307 external RTC
+//		- one or two DS18b20 water temperature sensor
+//		- water PH, EC, LEVEL, TURBIDITY sensors handled
 //		- IR receiver (TK19) associated with an apple tv remote control
 //		- a buzzer
+//		- parameters saved on internal flash or external 24c32 i2c nvram
+//		- lights ar driven in PWM (default 5 channels, 4 for daylights and 1 for night lunar light)
+//		  by project Main Well pwm led driver modules are used (LDD-350H/LDD-700H/LDD-1000H) but any is ok.
+//		- Web interface for config/view parameters with websockets dynamic updates (alternative to IR remote)
 //
 //		Most of the hardware is configurable (configuration.h)
 //
@@ -22,13 +27,16 @@
 //						Partition scheme = Default 4MB with spiffs (1.2MB App/1.5MB SPIFFS)
 //
 //============================================================================================
-#define SK_VERSION				"3.9.1"
-#define SK_DATE					"01-07-2020"
+#define SK_VERSION				"3.9.8"
+#define SK_DATE					"12-09-2020"
 #define SK_AUTHOR				"c.benedetti"
 #define SK_FEATURE				"esp32"
 
-//#define IR_KEYBOARD
+#define CONFIG_ASYNC_TCP_RUNNING_CORE	0
+#define ASYNC_TCP_SSL_ENABLED			0
+
 #define INTERRUPT_ATTR IRAM_ATTR
+
 #define DEBUG(...) Serial.printf( __VA_ARGS__ )		// activate debug
 #ifndef DEBUG 
 	#define DEBUG(...)
@@ -45,6 +53,7 @@
 #include <WiFiMulti.h>
 #include <WiFiUdp.h>
 #include <time.h>
+#include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
 #include <pgmspace.h>
@@ -108,7 +117,6 @@ const char		*confirm_msg = "* CONFIRM *";
 IPAddress 		moduleIp;
 AsyncWebServer	webServer(HTTP_PORT);
 AsyncWebSocket 	webSocket("/ws");
-//AsyncEventSource events("/events");
 WiFiMulti 		wifiMulti;
 WiFiClient	 	client;
 
@@ -125,10 +133,187 @@ bool			otaInProgress = false;
 double 			restartTimer = 0;
 double 			restartTimerTarget;
 
+//===========================================================================================
+//									WEB-SOCKET HANDLING FUNCTIONS
+//===========================================================================================
+void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
+	if(type == WS_EVT_CONNECT) {
+		DEBUG("ws[%s][%u] connect with protocol '%s'\n", server->url(), client->id(), client->protocol());
+		client->ping();
+	} else if(type == WS_EVT_DISCONNECT) {
+		DEBUG("ws[%s][%u] disconnect\n", server->url(), client->id());
+	} else if(type == WS_EVT_ERROR) {
+		DEBUG("ws[%s][%u] error(%u): %s\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
+	} else if(type == WS_EVT_DATA) {
+		data[len] = 0;
+		if(strncmp((char*)data, "ssid request", len) == 0) {
+			ssidRequestTrigger = client->id();
+		} else if(strncmp((char*)data, "runtime=", 8) == 0 or strncmp((char*)data, "runmode=", 8) == 0) {
+			fastTimeRunJump(data, len);
+		} else if(strncmp((char*)data, "lightforce=", 11) == 0) {
+			lightsStatusForce(data, len);
+		} else if(strncmp((char*)data, "calibrationph=", 14) == 0) {
+			calibrationRequestPH(client->id(), data, len);
+		} else if(strncmp((char*)data, "calibrationec=", 14) == 0) {
+			calibrationRequestEC(client->id(), data, len);
+		}
+	} else if(type == WS_EVT_PONG) {
+//		DEBUG("ws[%s][%u] pong[%u]: %s\n", server->url(), client->id(), len, (len)?(char*)data:"");
+	}
+}
+
+void wsConnectedClientsSend( const char* protocol, const char* format, ...) {
+	AsyncWebSocket::AsyncWebSocketClientLinkedList list = webSocket.getClients();
+
+	va_list arg;
+	for(const auto& cli: list){
+		if(cli->status() == WS_CONNECTED){
+			if(strstr(cli->protocol(), protocol)) {
+				va_start(arg, format);
+				cli->printf(format, arg);
+				va_end(arg);
+			}
+		}
+	}
+}
+
+void wsSendTime() {
+	static tm time = datetime;
+	if(!fastTimeRun) {
+		if(time.tm_sec != datetime.tm_sec) {
+			time.tm_hour = datetime.tm_hour;
+			time.tm_min = datetime.tm_min;
+			time.tm_sec = datetime.tm_sec;
+			wsConnectedClientsSend("time", "TIME=%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
+
+			if(time.tm_mday != datetime.tm_mday) {
+				time.tm_mday = datetime.tm_mday;
+				time.tm_mon = datetime.tm_mon;
+				time.tm_year = datetime.tm_year;
+				wsConnectedClientsSend("time", "DATE=%02d-%02d-%04d", time.tm_mday, time.tm_mon, time.tm_year);
+			}
+		}
+	} else {
+		if(time.tm_hour != datetime.tm_hour) {
+			time.tm_hour = datetime.tm_hour;
+			wsConnectedClientsSend("time", "TIME=running...");
+		}
+	}
+}
+
+void wsSendLight() {
+	char buf[32];
+	static uint8_t light[LIGHT_LINE_NUMBER];			// 0=dark, 1=Inc, 2=Dec, 3=full
+	for(uint8_t i = 0; i < LIGHT_LINE_NUMBER; i++) {
+		buf[0] = '\0';
+		
+		if(Plafo[i].powerState == POWER_OFF) {
+			if(light[i] != POWER_OFF) {
+				light[i] = POWER_OFF;
+				getP(buf, color_dark);
+			}
+		} else if(Plafo[i].powerState == POWER_ON_INC) {
+			if(light[i] != POWER_ON_INC) {
+				light[i] = POWER_ON_INC;
+				getP(buf, color_inc);
+			}
+		} else if(Plafo[i].powerState == POWER_ON_DEC) {
+			if(light[i] != POWER_ON_DEC) {
+				light[i] = POWER_ON_DEC;
+				getP(buf, color_dec);
+			}
+		} else if(Plafo[i].powerState == POWER_ON) {
+			if(light[i] != POWER_ON) {
+				light[i] = POWER_ON;
+				getP(buf, color_full);
+			}
+		}
+		if(strlen(buf) > 0) {
+			wsConnectedClientsSend("light", "LIGHT%d=%s", i, buf);
+		}
+	}
+}
+
+void wsSendLightAvg() {
+	static int dlavg = 0;
+	static int llavg = 0;
+	static int light[LIGHT_LINE_NUMBER];
+	
+	if(dlavg != calcLuxAverage()) {
+		dlavg = calcLuxAverage();
+		wsConnectedClientsSend("lightavg", "DLAVG=%3d&#37;", dlavg);
+	}
+	if(llavg != calcLunarAverage()) {
+		llavg = calcLunarAverage();
+		wsConnectedClientsSend("lightavg", "LLAVG=%3d&#37;", llavg);
+	}
+	
+	for(uint8_t i = 0; i < LIGHT_LINE_NUMBER; i++) {
+		int lux = calcLuxPercentage(i);
+		if(light[i] != lux) {
+			light[i] = lux;
+			wsConnectedClientsSend("lightavg", "LUX%d=%3d&#37;", i, lux);
+		}
+	}
+}
+
+void wsSendWater() {
+	char buf[32];
+	if(Tsensor1 or Tsensor2) {
+		static int watertemp = 0;
+		if(watertemp != tmed) {
+			watertemp = tmed;
+			wsConnectedClientsSend("water", "WATER_TEMP=%s", ftoa(buf, tmed));
+		}
+	}
+
+	static bool waterlevel = false;
+	if(waterlevel != Liquid_level) {
+		waterlevel = Liquid_level;
+		wsConnectedClientsSend("water", "WATER_LEVEL=%s", waterlevel?"FULL":"LOW ");
+	}
+
+	if(!isnan(ntu)) {
+		static int waterturb = 0;
+		if(waterturb != ntu) {
+			waterturb = ntu;
+			wsConnectedClientsSend("water", "WATER_TURB=%s", ftoa(buf, waterturb));
+		}
+	}
+
+	if(!isnan(PHavg)) {
+		static int waterph = 0;
+		if(waterph != PHavg) {
+			waterph = PHavg;
+			wsConnectedClientsSend("water", "WATER_PH=%s", ftoa(buf, waterph));
+		}
+	}
+
+	if(!isnan(ECavg)) {
+		static int waterec = 0;
+		if(waterec != ECavg) {
+			waterec = ECavg;
+			wsConnectedClientsSend("water", "WATER_EC=%s", ftoa(buf, waterec));
+		}
+	}
+}
+
+void wsSendRele() {
+	static bool rele[SR_RELAIS_NUM];
+	for(uint8_t i = 0; i < SR_RELAIS_NUM; i++) {
+		uint8_t idx = (i+1);
+		if(rele[i] != relaisStatus(idx)) {
+			rele[i] = relaisStatus(idx);
+			wsConnectedClientsSend("rele", "RELE%d=%s", idx, rele[i]?"ON ":"OFF");
+		}
+	}
+}
 
 //==============================================================================
 //							SERVICE HANDLER FUNCTIONS
 //==============================================================================
+#ifdef IR_REMOTE_KEYBOARD
+
 void dispatcher() {
 	switch(dstatus & DS_INIT_MASK) {
 		case DS_IDLE:
@@ -204,6 +389,18 @@ void dispatcher() {
 	}
 }
 
+#endif
+
+void wsDispatcher() {
+	if(webSocket.count() > 0) {
+		wsSendTime();
+		wsSendLight();
+		wsSendLightAvg();
+		wsSendWater();
+		wsSendRele();
+	}
+}
+
 void handleTimers() {
 	if(ntpswitch) {
 		if((ntpPollTimer + ntpPollTimerTarget) < millis()) {
@@ -213,118 +410,146 @@ void handleTimers() {
 			ntpPollTimer = millis();				// then restart it
 		}
 	}
+}
+
+void calibrationRequestPH( uint32_t cli, uint8_t* data, size_t len ) {
+	uint8_t phase = data[len-1]-0x30;			// calibration=phaseX -> 17^ char = phase number (or last one)
+	static float nVoltage, aVoltage;
+
+	DEBUG("===> cli: %d, PH phase: %d\n", cli, phase);
+
+	if(phase == 1) {
+		nVoltage = 0.0;
+		aVoltage = 0.0;
+		String out = "CALPH="+getP(cal_ph_ph1)+getP(brk)+getP(color_red)+getP(req_ok)+getP(color_rest);
+//		webSocket.text(cli, out);
+		webSocket.textAll(out);
+	} else if(phase == 2) {
+		String out;
+		float voltage = analogRead(PIN_PH_SENSOR) / ADC_RESOLUTION * 5000;	// read the PH voltage (0~3.0V)
+		if((voltage > 1322) and (voltage < 1678)) {					// buffer solution:7.0{
+			nVoltage = voltage;
+			out = "7.0"+getP(brk)+getP(color_red)+getP(req_ok)+getP(color_rest);;
+		} else if((voltage > 1854) and (voltage < 2210)) {			//buffer solution:4.0
+			aVoltage = voltage;
+			out = "4.0"+getP(brk)+getP(color_red)+getP(req_ok)+getP(color_rest);;
+		} else {
+			out = "ERROR, Try again"+getP(brk)+getP(color_red)+getP(req_refresh)+getP(color_rest);
+		}
+//		webSocket.printf(cli, "CALPH=<br>Buffer solution PH %s", out.c_str());
+		webSocket.printfAll("CALPH=<br>Buffer solution PH %s", out.c_str());
+	} else if(phase == 3) {
+		if(aVoltage != 0 or nVoltage != 0) {
+			if(nVoltage > 0) {
+				NvramWriteAnything(NVRAM_PH_NEUTRAL, nVoltage);
+			}
+			if(aVoltage > 0) {
+				NvramWriteAnything(NVRAM_PH_ACID, aVoltage);
+			}
+			StaticMemoryCommit();
+			PH_SensorInit();
+
+			String out = "CALPH="+getP(brk)+getP(cal_ph_ph3);
+	//		webSocket.text(cli, out);
+			webSocket.textAll(out);
+		}
+	}
+}
+	
+void calibrationRequestEC( uint32_t cli, uint8_t* data, size_t len ) {
+	uint8_t phase = data[len-1]-0x30;			// calibration=phaseX -> 17^ char = phase number (or last one)
+	static float kTemp, kTempHigh, kTempLow;
+	static float voltage, KValue;
+
+	DEBUG("===> cli: %d, EC phase: %d\n", cli, phase);
+
+	if(phase == 1) {
+		kTempHigh = 0.0;
+		kTempLow = 0.0;
+		String out = "CALEC="+getP(cal_ec_ph1)+getP(brk)+getP(color_red)+getP(req_ok)+getP(color_rest);
+//		webSocket.text(cli, out);
+		webSocket.textAll(out);
+	} else if(phase == 2) {	
+		String out = "CALEC="+getP(brk);
+		voltage = analogRead(PIN_EC_SENSOR) / ADC_RESOLUTION * 5000;	// read the EC voltage (0~3.4V)
+		KValue = ec.readEC(voltage, tmed);								// convert voltage to EC with temperature compensation
+		if(isnan(KValue)) {
+			out += "ERROR reading KValue, Try again"+getP(brk)+getP(color_red)+getP(req_refresh)+getP(color_rest);
+		} else {
+			out += "Read value: "+String(KValue)+getP(brk)+getP(color_red)+getP(req_ok)+getP(color_rest);;
+		}
+//		webSocket.text(cli, out);
+		webSocket.textAll(out);
+		delay(100);
+	} else if(phase == 3) {
+		String out = "CALEC="+getP(brk)+"Buffer solution ";									// 1413us/cm or 12.88ms/cm
+		float rawEC = ec.getRawEC();
+		if((rawEC > 0.9) && (rawEC < 1.9)) {
+			out += "1413us/cm";
+			kTempLow = 1.413*(1.0+0.0185*(tmed-25.0));
+		} else if((rawEC > 9) && (rawEC < 16.8)) {
+			out += "12.88ms/cm";
+			kTempHigh = 12.88*(1.0+0.0185*(tmed-25.0));
+		} else {
+			out += "ERROR, Try again"+getP(brk)+getP(color_red)+getP(req_refresh)+getP(color_rest);
+		}
+//		webSocket.text(cli, out);
+		webSocket.textAll(out);
+	} else if(phase == 4) {
+		if(kTempHigh != 0 or kTempLow != 0) {
+			if(kTempHigh > 0) {
+				NvramWriteAnything(NVRAM_EC_KVALUEHIGH, kTempHigh);
+				kvalueHigh = kTempHigh;
+			}
+			if(kTempLow > 0) {
+				NvramWriteAnything(NVRAM_EC_KVALUELOW, kTempLow);
+				kvalueLow = kTempLow;
+			}
+			StaticMemoryCommit();
+			EC_SensorInit();
+
+			String out = "CALEC="+getP(brk)+getP(cal_ec_ph3);
+	//		webSocket.text(cli, out);
+			webSocket.textAll(out);
+		}
+	}
+}
+	
+void lightsStatusForce( uint8_t* data, size_t len ) {
+	if((char)data[12] == ':') {
+		uint8_t channel = data[11]-0x30;
+		uint8_t status = data[13]-0x30;
+		if(channel >= 0 and channel < LIGHT_LINE_NUMBER and status >= POWER_OFF and status <= POWER_AUTO) {
+			if(Plafo[channel].workingMode != status) {
+				Plafo[channel].workingMode = status;
+				Plafo[channel].startup = true;
+			}
+			DEBUG("lightforce: light %d, desired status %d\n", (channel+1), status);
+		}
+	}
+}
+	
+void fastTimeRunJump( uint8_t* data, size_t len ) {
+	size_t vlen = len-8;
+	if(strncmp((char*)data, "runmode=", 8) == 0) {
+		fastTimeRun = !strncmp((char*)&data[8], "fast", vlen);
+		parameters_save = SAVE_RUNMODE;
+	} else if(strncmp((char*)data, "runtime=", 8) == 0) {
+		if(fastTimeRun) {
+			if(strncmp((char*)&data[8], "Inc", vlen) == 0) {
+				getDateTime( false, +1 );
+			} else if(strncmp((char*)&data[8], "Dec", vlen) == 0) {
+				getDateTime( false, -1 );
+			}
+		}
+	}
+}
+
+void handleWebSocketRequests() {
 	if(webSocket.count() > 0) {
-		char buf[16];
-		static tm time = datetime;
-		if(time.tm_sec != datetime.tm_sec) {
-			time.tm_hour = datetime.tm_hour;
-			time.tm_min = datetime.tm_min;
-			time.tm_sec = datetime.tm_sec;
-			webSocket.printfAll("TIME=%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
-
-			if(time.tm_mday != datetime.tm_mday) {
-				time.tm_mday = datetime.tm_mday;
-				time.tm_mon = datetime.tm_mon;
-				time.tm_year = datetime.tm_year;
-				webSocket.printfAll("DATE=%02d-%02d-%04d", time.tm_mday, time.tm_mon, time.tm_year);
-			}
-			
-			static int dlavg = 0;
-			if(dlavg != calcLuxAverage()) {
-				dlavg = calcLuxAverage();
-				webSocket.printfAll("DLAVG=%3d&#37;", dlavg);
-			}
-			
-			static int llavg = 0;
-			if(llavg != calcLunarAverage()) {
-				llavg = calcLunarAverage();
-				webSocket.printfAll("LLAVG=%3d&#37;", llavg);
-			}
-
-			if(Tsensor1 or Tsensor2) {
-				static int watertemp = 0;
-				if(watertemp != tmed) {
-					watertemp = tmed;
-					webSocket.printfAll("WATER_TEMP=%s", ftoa(buf, tmed));
-				}
-			}
-
-			static bool waterlevel = false;
-			if(waterlevel != Liquid_level) {
-				waterlevel = Liquid_level;
-				webSocket.printfAll("WATER_LEVEL=%s", waterlevel?"FULL":"LOW ");
-			}
-
-			if(!isnan(ntu)) {
-				static int waterturb = 0;
-				if(waterturb != ntu) {
-					waterturb = ntu;
-					webSocket.printfAll("WATER_TURB=%s", ftoa(buf, waterturb));
-				}
-			}
-
-			if(!isnan(PHavg)) {
-				static int waterph = 0;
-				if(waterph != PHavg) {
-					waterph = PHavg;
-					webSocket.printfAll("WATER_PH=%s", ftoa(buf, waterph));
-				}
-			}
-
-			if(!isnan(ECavg)) {
-				static int waterec = 0;
-				if(waterec != ECavg) {
-					waterec = ECavg;
-					webSocket.printfAll("WATER_EC=%s", ftoa(buf, waterec));
-				}
-			}
-
-			static bool rele[SR_RELAIS_NUM];
-			for(uint8_t i = 0; i < SR_RELAIS_NUM; i++) {
-				uint8_t idx = (i+1);
-				if(rele[i] != relaisStatus(idx)) {
-					rele[i] = relaisStatus(idx);
-					webSocket.printfAll("RELE%d=%s", idx, rele[i]?"ON ":"OFF");
-				}
-			}
-
-			static uint8_t light[LIGHT_LINE_NUMBER];			// 0=dark, 1=Inc, 2=Dec, 3=full
-			PlafoTemp tmp;
-			for(uint8_t i = 0; i < LIGHT_LINE_NUMBER; i++) {
-				getPlafoAdjustedTimings(&tmp, i);
-				buf[0] = '\0';
-				
-				if(tmp.minsCurr >= tmp.minsOn and tmp.minsCurr < tmp.minsFA) {				//  - alba
-					if(light[i] != LIGHT_INC) {
-						light[i] = LIGHT_INC;
-						strcpy(buf, "orange>Inc");
-					}						
-				} else if(tmp.minsCurr >= tmp.minsFA and tmp.minsCurr < tmp.minsIT) {		//	- luce piena
-					if(light[i] != LIGHT_FULL) {
-						light[i] = LIGHT_FULL;
-						strcpy(buf, "red>Full");
-					}						
-				} else if(tmp.minsCurr >= tmp.minsIT and tmp.minsCurr < tmp.minsOff) {		// 	- tramonto
-					if(light[i] != LIGHT_DEC) {
-						light[i] = LIGHT_DEC;
-						strcpy(buf, "orange>Dec");
-					}						
-				} else {																	//  - buio
-					if(light[i] != LIGHT_DARK) {
-						light[i] = LIGHT_DARK;
-						strcpy(buf, "black>Dark");
-					}						
-				}
-				
-				if(strlen(buf) > 0) {
-					webSocket.printfAll("LIGHT%d=<font color=%s</font>", i, buf);
-				}
-			}
-			webSocket.cleanupClients();
-		} else if(ssidRequestTrigger != NULL) {						// websocket ssid request handler
+		if(ssidRequestTrigger != NULL) {						// websocket ssid request handler
 			int cli = ssidRequestTrigger;
-			ssidRequestTrigger = NULL;								// reset trigger
-			
+			ssidRequestTrigger = NULL;							// reset trigger
 			int result = WiFi.scanNetworks();
 			String buff = "NETS=Networks found: " + String(result) + "<br>";
 			webSocket.text(cli, buff);
@@ -362,6 +587,8 @@ void handleParametersSave( uint8_t whatToSave ) {
 		saveNvramAdminPsw();
 	} else if(whatToSave == SAVE_RESTART) {
 		saveNvramRestart();
+	} else if(whatToSave == SAVE_CALIBRATION) {
+//		saveNvramCalibration();
 	}
 	parameters_save = SAVE_NOTHING;
 }
@@ -442,14 +669,20 @@ void loop()	{
 			//  only if OTA not in progress
 			//-------------------------------------------------------
 			if(otaInProgress == false) {
+#ifdef IR_REMOTE_KEYBOARD
 				kp_new = ReadKeyboard();		// read keyboard or IR remote
+				dispatcher();
+#else				
+				NormalOperation();
+#endif				
 				tmed = WaterTemperatureHandler();
 				datetime = getDateTime();
 	
 				LightsHandler();
 //				AlarmSireneHandle();
-				dispatcher();
 				handleTimers();
+				wsDispatcher();
+				handleWebSocketRequests();
 
 				WaterLevelHandler();
 				WaterTurbidityHandler();
@@ -595,6 +828,8 @@ bool startNetwork() {
 #endif		
 		//-------------------- mDNS RESPONDER -------------------------
 		if(MDNS.begin(modulename)) {
+		    MDNS.addService("http", "tcp", HTTP_PORT);
+			MDNS.addServiceTxt("http", "tcp", "board", "ESP32");
 			DEBUG("MDNS responder started as '%s.local'\n", modulename);
 		}
 		deviceMode = DEVICE_MODE_NORMAL;
@@ -618,6 +853,8 @@ bool startAP() {
 		moduleIp = WiFi.softAPIP();
 		DEBUG("Module succesfully switched to AP mode at IP %d.%d.%d.%d\n", moduleIp[0], moduleIp[1], moduleIp[2], moduleIp[3]);
 		if(MDNS.begin(modulename)) {
+		    MDNS.addService("http", "tcp", HTTP_PORT);
+			MDNS.addServiceTxt("http", "tcp", "board", "ESP32");
 			DEBUG("MDNS responder started as '%s.local'\n", modulename);
 		}
 		deviceMode = DEVICE_MODE_AP;
@@ -663,6 +900,8 @@ void initOTA( bool enable = true ) {
 	otaInProgress = false;		
 	DEBUG("OTA update ");
 	
+	ArduinoOTA.setMdnsEnabled(false);		// workaround for mDNS <-> OTA issue
+	
 	if(enable) {
 		otaEnabled = readStaticMemory(NVRAM_OTA_ENABLED) == 0x01;
 	} else {
@@ -672,10 +911,9 @@ void initOTA( bool enable = true ) {
 	if(otaEnabled) {
 		ArduinoOTA.setRebootOnSuccess(true);
 		ArduinoOTA.setHostname(modulename);
-//		ArduinoOTA.setPort(3232);
 		
 		ArduinoOTA.onStart([]() {
-			KeyboardDisable();					// disable keyboard interrupts
+//			KeyboardDisable();					// disable keyboard interrupts
 			otaInProgress = true;
 			DEBUG("Start updating ");
 			if(ArduinoOTA.getCommand() == U_FLASH) {
@@ -811,20 +1049,24 @@ void startWebServer() {
 	webServer.on("/restart.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/restart.html", String(), false, processor); });
 	webServer.on("/restartexec.html", HTTP_POST, handleRestartExec);
 	webServer.on("/runmode.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/runmode.html", String(), false, processor); });
-	webServer.on("/runmodeexec.html", HTTP_POST, handleRunmodeExec);
-	webServer.on("/runmodecontrol", HTTP_GET, handleRunmodeControl);
 	webServer.on("/datetime.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/datetime.html", String(), false, processor); });
 	webServer.on("/datetimeexec.html", HTTP_POST, handleDatetimeExec);
+	webServer.on("/lightbypass.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/lightbypass.html", String(), false, processor); });
 	webServer.on("/lightsparams.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/lightsparams.html", String(), false, processor); });
 	webServer.on("/lightsparamsexec.html", HTTP_POST, handleLightsParametersExec);
 	webServer.on("/lightsdispvalues.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/lightsdispvalues.html", String(), false, processor); });
+	webServer.on("/calibrationph.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/calibrationph.html", String(), false, processor); });
+	webServer.on("/calibrationec.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/calibrationec.html", String(), false, processor); });
 	webServer.on("/temperature.html", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/temperature.html", String(), false, processor); });
 	webServer.on("/temperatureexec.html", HTTP_POST, handleTemperatureExec);
 
 	webServer.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/style.css", "text/css"); });
-	webServer.on("/basic_scripts.js", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/basic_scripts.js", "text/javascript"); });
-	webServer.on("/ssid_scripts.js", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/ssid_scripts.js", "text/javascript"); });
-	webServer.on("/ws_scripts.js", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/ws_scripts.js", "text/javascript"); });
+	webServer.on("/js_basic.js", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/js_basic.js", "text/javascript"); });
+	webServer.on("/js_ws_common.js", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/js_ws_common.js", "text/javascript"); });
+	webServer.on("/js_ws_scripts.js", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/js_ws_scripts.js", "text/javascript"); });
+	webServer.on("/js_ws_ssid.js", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/js_ws_ssid.js", "text/javascript"); });
+	webServer.on("/js_ws_calibration.js", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/js_ws_calibration.js", "text/javascript"); });
+	webServer.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/favicon.ico", "image/ico"); });
 	webServer.on("/blank.jpg", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/blank.jpg", "image/jpg"); });
 	webServer.on("/modify.jpg", HTTP_GET, [](AsyncWebServerRequest *request) { request->send(SPIFFS, "/modify.jpg", "image/jpg"); });
 	webServer.onNotFound([](AsyncWebServerRequest *request) { request->send(404, "text/plain", "WARNING: you have reached an unknown page"); });
@@ -834,7 +1076,11 @@ void startWebServer() {
 	webServer.addHandler(&webSocket);
 
 	// start webserver & websocket server
+#if ASYNC_TCP_SSL_ENABLED	
+	webServer.beginSecure("", "", "");
+#else
 	webServer.begin();
+#endif
 	DEBUG("HTTP & websocket server started and listening on port %d\n", HTTP_PORT);
 }		
 	
@@ -897,7 +1143,7 @@ void setup() {
 //			AlarmInit();					// Initialize automatic alarm sirene (arduino pro-mini)
 			BuzzerInit();					// Initialize Buzzer
 			RelaisInit();					// Relais board init
-#ifdef IR_KEYBOARD
+#ifdef IR_REMOTE_KEYBOARD
 			KeyboardInit();					// Keyboard and IR receiver init [init before PwmLightsInit()]
 #endif
 			PwmLightsInit() ;				// PWM Lights init
@@ -956,24 +1202,6 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
 }
 
 //===========================================================================================
-//									WEB-SOCKET HANDLING FUNCTIONS
-//===========================================================================================
-void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
-	if(type == WS_EVT_CONNECT) {
-		DEBUG("ws[%s][%u] connect\n", server->url(), client->id());
-	} else if(type == WS_EVT_DISCONNECT) {
-//		DEBUG("ws[%s][%u] disconnect\n", server->url(), client->id());
-	} else if(type == WS_EVT_ERROR) {
-		DEBUG("ws[%s][%u] error(%u): %s\n", server->url(), client->id(), *((uint16_t*)arg), (char*)data);
-	} else if(type == WS_EVT_DATA) {
-		if(strncmp((char*)data, "ssid request", len) == 0) {
-			ssidRequestTrigger = client->id();
-		}
-	} else if(type == WS_EVT_PONG) {
-	}
-}
-
-//===========================================================================================
 //									HTML PRE-PROCESSOR
 //===========================================================================================
 String processor(const String& var) {
@@ -997,7 +1225,11 @@ String processor(const String& var) {
 		sprintf(buf, "%04d-%02d-%02d", datetime.tm_year, datetime.tm_mon, datetime.tm_mday);
 		return String(buf);
 	} else if(var == "TIME") {
-		sprintf(buf, "%02d:%02d:%02d", datetime.tm_hour, datetime.tm_min, datetime.tm_sec);
+		if(fastTimeRun) {
+			sprintf(buf, "running...");
+		} else {
+			sprintf(buf, "%02d:%02d:%02d", datetime.tm_hour, datetime.tm_min, datetime.tm_sec);
+		}
 		return String(buf);
 	} else if(var == "TIME_MIN") {
 		uint16_t mins = (datetime.tm_hour*60)+datetime.tm_min;
@@ -1021,9 +1253,11 @@ String processor(const String& var) {
 		sprintf(buf, "%3d%", calcLuxAverage());
 		return String(buf);
 	} else if(var == "LLAVG") {
-		float avg = ((uint32_t)Plafo[LIGHT_LINE_5].pwmValue * pwm_resolution / (uint32_t)Plafo[LIGHT_LINE_5].pwmMax);
-		sprintf(buf, "%3d%", int((avg * 100) / pwm_resolution));
-		return String(buf);
+		if(pwm_resolution > 0) {		// divide by 0 error patch
+			float avg = ((uint32_t)Plafo[LIGHT_LINE_5].pwmValue * pwm_resolution / (uint32_t)Plafo[LIGHT_LINE_5].pwmMax);
+			sprintf(buf, "%3d%", int((avg * 100) / pwm_resolution));
+			return String(buf);
+		}
 	} else if(var.substring(0,4) == "RELE") {
 		return String(relaisStatus(var.substring(4).toInt())?"ON ":"OFF");
 		
@@ -1147,16 +1381,15 @@ String processorLight( String var ) {
 		uint16_t minsFad = Plafo[i].minsFad;
 		sprintf(buf, "<font color=%s>%4d</font>", minsFad > MINUTES_PER_DAY ? "red":"blue", minsFad);
 	} else if(var.substring(0,7) == "STATUS_") {
-		PlafoTemp tmp;
-		getPlafoAdjustedTimings(&tmp, var.substring(7).toInt());
-		if(tmp.minsCurr >= tmp.minsOn and tmp.minsCurr < tmp.minsFA) {				//  - alba
-			sprintf(buf,"<font color=orange>Inc</font>");
-		} else if(tmp.minsCurr >= tmp.minsFA and tmp.minsCurr < tmp.minsIT) {		//	- luce piena
-			sprintf(buf, "<font color=red>Full</font>");
-		} else if(tmp.minsCurr >= tmp.minsIT and tmp.minsCurr < tmp.minsOff) {		// 	- tramonto
-			sprintf(buf, "<font color=orange>Dec</font>");
-		} else {																	//  - buio
-			sprintf(buf, "Dark");
+		int i = var.substring(7).toInt();
+		if(Plafo[i].powerState == POWER_OFF) {
+			getP(buf, color_dark);
+		} else if(Plafo[i].powerState == POWER_ON_INC) {
+			getP(buf, color_inc);
+		} else if(Plafo[i].powerState == POWER_ON) {
+			getP(buf, color_full);
+		} else if(Plafo[i].powerState == POWER_ON_DEC) {
+			getP(buf, color_dec);
 		}
 	} else if(var.substring(0,5) == "MODE_") {
 		int i = var.substring(5).toInt();
@@ -1167,6 +1400,9 @@ String processorLight( String var ) {
 	} else if(var.substring(0,5) == "DESC_") {
 		int i = var.substring(5).toInt();
 		sprintf(buf, "%s", plafoNames[i]);
+	} else if(var.substring(0,4) == "LUX_") {
+		int i = var.substring(4).toInt();
+		sprintf(buf, "%d", calcLuxPercentage(i));
 	}
 	return String(buf);
 }	
@@ -1178,6 +1414,10 @@ String processorRadio( String var ) {
 		uint8_t mode = var.substring(5,6).toInt();
 		uint8_t index = var.substring(7).toInt();
 		sprintf(buf, "'%d'%s", mode, Plafo[index].workingMode==mode?" checked":"");
+	} else if(var.substring(0,6) == "FORCE_") {
+		uint8_t mode = var.substring(6,7).toInt();
+		uint8_t index = var.substring(8).toInt();
+		sprintf(buf, "'%d'%s", mode, Plafo[index].workingMode==mode?" checked":"");
 	} else if(var.substring(0,4) == "NTP_") {
 		uint8_t mode = var.substring(4).toInt();
 		sprintf(buf, "'%s'%s", mode==0?"off":"on", ntpswitch==mode?" checked":"");
@@ -1186,7 +1426,7 @@ String processorRadio( String var ) {
 		sprintf(buf, "'%s'%s", mode==0?"off":"on", otaEnabled==mode?" checked":"");
 	} else if(var.substring(0,4) == "RUN_") {
 		uint8_t mode = var.substring(4).toInt();
-		sprintf(buf, "'%s'%s", mode==0?"normal":"fast", fastTimeRun==mode?" checked":"");
+		sprintf(buf, "%s", fastTimeRun==mode?" checked":"");
 	}		
 	return String(buf);
 }
@@ -1194,32 +1434,6 @@ String processorRadio( String var ) {
 //===========================================================================================
 //									HTML HANDLING FUNCTIONS
 //===========================================================================================
-
-void handleSsid( AsyncWebServerRequest *request ) {
-	String buff = initHtmlPage("SSID/Password set");
-
-	resetRestartTimer();
-	
-	int result = WiFi.scanNetworks();
-	buff += "Networks found " + String(result) + ":";
-	
-	for(int i = 0; i < result; i++) {
-		buff += "<br>" + String(i+1) + ") " + WiFi.SSID(i);
-		buff += ", rssi: " + String(WiFi.RSSI(i));
-		buff += ", enc: " + String(decodeEncryption(WiFi.encryptionType(i)));
-		buff += ", chan: " + String(WiFi.channel(i));
-	}
-	buff += "<br>" + initForm("ssid");
-	
-	for(int i = 0; i < NVRAM_SSID_PSWD_NUM; i++) {
-		String idx = String(i);
-		buff += "<br><label>SSID" + idx + ": </label><input name='ssid" + idx + "' length=32 value='" + String(nets[i].ssid) + "'>";
-		buff += " <label>PSWD: </label><input name='pass" + idx + "' length=32 value='" + String(nets[i].password) + "'>";
-	}
-	buff += getP(form_end_ok);
-	buff += generateApHomeLink();
-	sendHtmlPage(request, buff);
-}
 
 void handleSsidExec( AsyncWebServerRequest *request ) {
 	uint8_t len;
@@ -1453,55 +1667,7 @@ void handleRestartExec( AsyncWebServerRequest *request ) {
 	}
 }
 
-void handleRunmodeExec( AsyncWebServerRequest *request ) {
-	if(request->hasParam("runmode", true)) {
-		bool fastmode = (request->getParam("runmode", true)->value() == "fast");
-		if(fastmode != fastTimeRun) {
-			fastTimeRun = fastmode;
-			parameters_save = SAVE_RUNMODE;
-		}
-	}
-	printRefreshHeader(request, "/runmode.html");
-}
-
-void handleRunmodeControl( AsyncWebServerRequest *request ) {
-	if(fastTimeRun) {
-		if(request->hasParam("control", false)) {
-			String control = request->getParam("control", false)->value();
-			if(control == "Inc") {
-				getDateTime( false, +1 );
-			} else if(control == "Dec") {
-				getDateTime( false, -1 );
-			}
-		}
-	}
-	request->send(200, "text/plain", "OK");	
-}
-
 //------------------------------ HEADERS and FOOTERS ---------------------------------
-
-String initLink( String link, String title ) {
-	return "<br><a href='/" + link + "'>" + title + "</a>";
-}
-	
-String initForm( String title ) {
-	return getP(form_init1) + title + "exec.html" + getP(form_init2);
-}
-	
-String initHtmlPage( String title ) {
-	String name = String(modulename);
-	name.toUpperCase();
-	return getP(html_init) + getP(color_blue) + name + getP(color_rest) + " - " + title + "</h1>";
-}
-
-String generateApHomeLink() {
-	return deviceMode==DEVICE_MODE_AP?getP(home_link):getP(config_link);
-}
-
-void sendHtmlPage( AsyncWebServerRequest *request, String buff ) {
-	buff += getP(html_exit);
-	request->send(200, "text/html", buff);
-}
 
 void printRefreshHeader(AsyncWebServerRequest *request ) {
 	printRefreshHeader( request, "/", 0, "" );

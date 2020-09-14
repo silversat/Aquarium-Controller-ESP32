@@ -4,12 +4,12 @@
 	<title>%MODULETITLE% SSID/Password set</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" type="text/css" href="style.css">
-	<script language="javascript" type="text/javascript" src="basic_scripts.js"></script>
-	<script type="text/javascript" src="ssid_scripts.js"></script>
+	<script language="javascript" type="text/javascript" src="js_basic.js"></script>
+	<script language="javascript" type="text/javascript" src="js_ws_common.js"></script>
 </head>
 <body onload="wsinit('ssid');">
 	<center>
-	<h1><font color=blue><b>AQUARIUM</b></font></h1>
+	<h1><img src="favicon.ico">&#9;<font color=blue><b>%MODULETITLE%</b></font></h1>
 	<br><div id="nets" class='myDiv'></div>
 	<br>
 	<form method='post' id='ssid' action='/ssidexec.html'>
@@ -41,5 +41,20 @@
 		</tr>
 	</table>
 	</center>
+	<script type="text/javascript">
+		function parseMessage( msg ) {
+			if($("nets")) {
+				if(msg.substr(0,5) == "NETS=") {
+					$("nets").innerHTML += msg.substr(5);
+				}
+			}
+		}
+
+		function onOpen(ws) {
+			ws.send("ssid request");
+		};
+	</script>
+
+	
 </body>
 </html>

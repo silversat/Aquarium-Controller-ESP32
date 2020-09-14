@@ -129,6 +129,8 @@ void Water_EC_Handler( float tmed ) {
 	}
 }
 
+#ifdef IR_REMOTE_KEYBOARD
+
 void sensorsCalibration_PH( float tmed ) {
 	static uint8_t phCalibrationStep;
 	static float nVoltage, aVoltage;
@@ -262,12 +264,14 @@ void sensorsCalibration_EC( float tmed ) {
 					StaticMemoryCommit();
 					kvalueLow = kTempLow;
 				}
-				PH_SensorInit();
+				EC_SensorInit();
 				SetInitBit(DS_SETUP_CALIBRATION);
 			}
 		}
 	}
 }
+
+#endif
 
 void PH_SensorInit() {
 	int count;

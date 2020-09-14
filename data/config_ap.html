@@ -6,25 +6,29 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-	<h1><font color='blue'>%MODULETITLE%</font> - AP mode configuration</h1>
+	<h1><img src="favicon.ico">&#9;<font color='blue'>%MODULETITLE%</font></h1>
 	<h2>Current values:</h2>
 	<table border=1>
+		<tr><th colspan=3><font color=yellow><b>AP mode configuration</b></font></th></tr>
 		<tr><th align=right>Firmware version</th><td align=left>%VERSION%</td></tr>
 		<tr><th align=right>Network</th><td align=left>%NETWORK%</td></tr>
 		<tr><th align=right>Module name</th><td align=left>%MODULENAME%</td></tr>
 		<tr><th align=right>System timers</th><td align=left>%APRESET% secs</td></tr>
 	</table><br>
 	
-	<table border=0><tr>
-		<td align=center><a type="button" href="/ssid" class='button'>SSID / Password</a></td>
-		<td align=center><a type="button" href="/name" class='button'>Module name</a></td>
-		<td align=center><a type="button" href="/systemtimers" class='button'>System Timers</a></td>
-		<td align=center><a type="button" href="/restart" class='button'>Module Restart</a></td>
-		<td align=center></td>
-	</tr></table><br>
+	<table border=0>
+		<tr>
+			<td align=center><a type="button" href="/ssid.html" class='button'>SSID / Password</a></td>
+			<td align=center><a type="button" href="/modulename.html" class='button'>Module name</a></td>
+		</tr>
+		<tr>
+			<td align=center><a type="button" href="/systemtimers.html" class='button'>System Timers</a></td>
+			<td align=center><a type="button" href="/restart.html" class='button'>Module Restart</a></td>
+		</tr>
+	</table><br>
 	
 	<table border=0><tr>
-		<td align=center><a type="button" href="/config.html" class='button'>Refresh</a></td>
+		<td align=center><a type="button" href="/config_ap.html" class='button'>Refresh</a></td>
 	</tr></table>
 </body>
 </html>

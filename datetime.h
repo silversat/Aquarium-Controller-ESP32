@@ -171,6 +171,16 @@ void printDateTime( tm dt, uint8_t col=0, uint8_t row=1 ) {     	// Creata per s
 	printString(buff, col, row);
 }
 
+void saveNvramDatetime() {
+	updateStaticMemory(NVRAM_NTP_ENABLED, ntpswitch);
+	updateStaticMemoryInt(NVRAM_NTP_POLL_MINS, int(ntpPollTimerTarget/MILLISECS_PER_MIN));
+	updateStaticMemoryString(ntpserver, NVRAM_NTP_SERVER, NVRAM_NTP_SERVER_LEN);
+	StaticMemoryCommit();
+	RtcInit();
+}
+
+#ifdef IR_REMOTE_KEYBOARD
+
 void displayRunStatus( bool status, uint8_t row ) {
 	if(status) {
 		printStringCenter(" Fast ", row);
@@ -203,20 +213,12 @@ void fastTimeSetup() {
 		if(fastTimeRun != status) {
 			fastTimeRun = status;
 			if(!fastTimeRun) {
-				getDateTime(true);
+//				getDateTime(true);
+				LoadAllLightStatus();
 			}
-			LoadAllLightStatus();
 		}
 		SetInitBit(DS_SETUP);
 	}
-}
-
-void saveNvramDatetime() {
-	updateStaticMemory(NVRAM_NTP_ENABLED, ntpswitch);
-	updateStaticMemoryInt(NVRAM_NTP_POLL_MINS, int(ntpPollTimerTarget/MILLISECS_PER_MIN));
-	updateStaticMemoryString(ntpserver, NVRAM_NTP_SERVER, NVRAM_NTP_SERVER_LEN);
-	StaticMemoryCommit();
-	RtcInit();
 }
 
 tm ImpostaDataOra() {  						// Funzione per impostazione data
@@ -333,6 +335,8 @@ tm ImpostaDataOra() {  						// Funzione per impostazione data
 			break;
 	}
 }
+
+#endif
 
 char* getNTPserver( char* ntpsrv ) {
 	char buffer[NVRAM_NTP_SERVER_LEN+1];

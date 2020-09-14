@@ -144,13 +144,7 @@ void StaticMemoryCommit() {
 	#ifdef USE_RTC_NVRAM
 //		delay(10);
 	#else
-		if(irKeyboardEnabled) {
-			KeyboardDisable();
-		}
 		EEPROM.commit();
-		if(irKeyboardEnabled) {
-			KeyboardEnable();
-		}
 	#endif
 }
 	
@@ -169,7 +163,7 @@ void NvRamInit() {
 			nvramI2Caddr = (uint16_t)addr;
 			
 			nvram = new EEPROM(nvramI2Caddr);
-			nvram->initialize(false, true, false);					// initialize( begin, wiretimeout, log )
+			nvram->initialize(false, true, false);				// initialize( begin, wiretimeout, log )
 			
 			randomSeed(analogRead(0));
 			uint8_t randNumber = (uint8_t)random(0x100);		// random number from 0 to 255

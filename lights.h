@@ -5,15 +5,17 @@
 //#define		DEBUG_LIGHTS
 #define		DISPLAY_MAX_ITEMS	DISPLAY_MAX_ROWS-1
 
-typedef struct {				//Creo una struttura di variabili relative ad un Tasto
+typedef struct {
 	uint8_t		hour;
 	uint8_t 	min;
 } time_type;
 
 typedef	struct 	{				// I valori di Pos, vengono usati per determinare l'indirizzo di memoria in cui vengono registrati gli orari
+	bool		startup;		// false=startup terminated, true=initial startup setup
 	uint8_t 	workingMode;	// 0 se la linea e Off in manuale, 1 se la linea ON in manuale, 2 se la linea e' in AUT fuzionamento automatico
 	uint8_t 	powerState;		// Tiene lo stato dell'alimentazione della linea (OFF, ON, ON_INC, ON_DEC)
 	uint8_t 	pwmPin;			// Contiene il numero di pin di controllo PWM delle singole linee
+	uint8_t 	pwmIncrement;	// Valore di incremento (pwm fading)
 	uint16_t 	pwmValue;		// Valore di Fading corrente
 	uint16_t 	pwmMax;			// Contiene il valore di luminosita massima impostata
 	uint16_t	targetPwm;
@@ -23,7 +25,6 @@ typedef	struct 	{				// I valori di Pos, vengono usati per determinare l'indiriz
 	uint16_t	minsFA;
 	uint16_t	minsIT;
 	uint32_t 	fadingTimer;	// Usato per lo storage di millis() durante l'esecuzione del fading
-	bool		startup;
 } PlafoData;
 
 typedef	struct 	{
@@ -33,9 +34,11 @@ typedef	struct 	{
 	uint16_t	minsOff;
 	uint16_t	minsCurr;
 	uint16_t	minsOrig;
+	uint8_t 	workingMode;
+	uint8_t 	powerState;
 } PlafoTemp;
 
-typedef struct {				//Creo una struttura di variabili relative ad un Tasto
+typedef struct {
 	uint8_t 	workingMode;
 	uint16_t 	pwmMax;
 } temp_data;
@@ -128,6 +131,8 @@ void getPlafoAdjustedTimings( PlafoTemp *tmp, int idx ) {
 	tmp->minsOff = Plafo[idx].minsOff;
 	tmp->minsCurr = TimeInMinutes();
 	tmp->minsOrig = tmp->minsCurr;
+	tmp->workingMode = Plafo[idx].workingMode;
+	tmp->powerState = Plafo[idx].powerState;
 	
 	if(tmp->minsCurr < tmp->minsOn and tmp->minsOff > MINUTES_PER_DAY) {	// adjust current time if overflowed to next day
 		tmp->minsCurr += MINUTES_PER_DAY;
@@ -153,9 +158,20 @@ int calcLuxAverage() {
 	float luxmed = 0;
 	for(int i = 0; i < DAYLIGHT_LINE_NUMBER; i++) {
 		if(Plafo[i].pwmMax <= 0) Plafo[i].pwmMax = 1;
+		if(Plafo[i].pwmValue > Plafo[i].pwmMax) Plafo[i].pwmValue = Plafo[i].pwmMax;
 		luxmed += ((uint32_t)Plafo[i].pwmValue * pwm_resolution / (uint32_t)Plafo[i].pwmMax);
 	}
 	luxmed = ((luxmed / DAYLIGHT_LINE_NUMBER) * 100) / pwm_resolution;
+	return int(luxmed);
+}
+
+int calcLuxPercentage( uint8_t channel ) {
+	float luxmed;
+
+	if(Plafo[channel].pwmMax <= 0) Plafo[channel].pwmMax = 1;
+	if(Plafo[channel].pwmValue > Plafo[channel].pwmMax) Plafo[channel].pwmValue = Plafo[channel].pwmMax;
+	luxmed = ((uint32_t)Plafo[channel].pwmValue * pwm_resolution / (uint32_t)Plafo[channel].pwmMax);
+	luxmed = (luxmed * 100) / pwm_resolution;
 	return int(luxmed);
 }
 
@@ -225,6 +241,7 @@ void LoadLightStatus( uint8_t channel, bool loadFromNvram = true )	{
 		}
 	}
 	Plafo[channel].minsFad = (Plafo[channel].minsFA - Plafo[channel].minsOn);
+	Plafo[channel].pwmIncrement = (1+int(Plafo[channel].pwmMax/64));
 
 	if(Plafo[channel].workingMode >= POWER_AUTO) {		// 0xFF is virgin eeprom data
 		#if defined(DEBUG_LIGHTS)		
@@ -291,34 +308,49 @@ void saveNvramLightStatus()	{
 //-----------------------------------------------------------------------------
 //								LIGTH HANDLER
 //-----------------------------------------------------------------------------
-uint16_t LightsHandlerModeOFF( uint8_t channel, uint16_t pwmValue ) {
-	if(pwmValue > 0)	{
-		if(((myMillis() - Plafo[channel].fadingTimer) >= FADING_INTERVAL)) {	
-			pwmValue--;
-			Plafo[channel].fadingTimer = myMillis();
+uint16_t LightsHandlerModeOFF( uint8_t channel, int pwmValue ) {
+	if(Plafo[channel].startup) {
+		if(Plafo[channel].powerState != POWER_ON_DEC) {
+			Plafo[channel].powerState = POWER_ON_DEC;			// immediatly switch ON power rele
 		}
-	} else {	
-		if(Plafo[channel].powerState != POWER_OFF) {
-			Plafo[channel].powerState = POWER_OFF;			// if reached pwm=0, switch OFF power rele
-		}
-	}
-	return pwmValue;
-}
-
-uint16_t LightsHandlerModeON( uint8_t channel, uint16_t pwmValue ) {
-	if(Plafo[channel].powerState != POWER_ON) {
-		Plafo[channel].powerState = POWER_ON;				// immediatly switch ON power rele
-	}
-	if(pwmValue < Plafo[channel].pwmMax)	{				// and begins fading-up till max reached
-		if(((myMillis() - Plafo[channel].fadingTimer) >= FADING_INTERVAL)) {	
-			pwmValue++;
-			Plafo[channel].fadingTimer = myMillis();
+		if(pwmValue > 0)	{
+			if(((myMillis() - Plafo[channel].fadingTimer) >= FADING_INTERVAL)) {	
+				pwmValue -= Plafo[channel].pwmIncrement;
+				if(pwmValue < 0) pwmValue = 0;
+				Plafo[channel].fadingTimer = myMillis();
+			}
+		} else {	
+			if(Plafo[channel].powerState != POWER_OFF) {
+				Plafo[channel].powerState = POWER_OFF;			// if reached pwm=0, switch OFF power rele
+				Plafo[channel].startup = false;
+				DEBUG("Exiting from light %d startup\n", channel+1);
+			}
 		}
 	}
 	return pwmValue;
 }
 
-uint16_t LightsHandlerModeAUTO( uint8_t channel, uint16_t pwmValue ) {
+uint16_t LightsHandlerModeON( uint8_t channel, int pwmValue ) {
+	if(Plafo[channel].startup) {
+		if(Plafo[channel].powerState != POWER_ON_INC) {
+			Plafo[channel].powerState = POWER_ON_INC;			// immediatly switch ON power rele
+		}
+		if(pwmValue < Plafo[channel].pwmMax)	{				// and begins fading-up till max reached
+			if(((myMillis() - Plafo[channel].fadingTimer) >= FADING_INTERVAL)) {	
+				pwmValue += Plafo[channel].pwmIncrement;
+				if(pwmValue > Plafo[channel].pwmMax) pwmValue = Plafo[channel].pwmMax;
+				Plafo[channel].fadingTimer = myMillis();
+			}
+		} else {
+			Plafo[channel].powerState = POWER_ON;
+			Plafo[channel].startup = false;
+			DEBUG("Exiting from light %d startup\n", channel+1);
+		}
+	}
+	return pwmValue;
+}
+
+uint16_t LightsHandlerModeAUTO( uint8_t channel, int pwmValue ) {
 	uint16_t curTime = TimeInMinutes();
 	uint16_t minsOn = Plafo[channel].minsOn;
 	uint16_t minsOff = Plafo[channel].minsOff;
@@ -331,41 +363,42 @@ uint16_t LightsHandlerModeAUTO( uint8_t channel, uint16_t pwmValue ) {
 		curTime += MINUTES_PER_DAY;
 	}
 
-#if defined(DEBUG_LIGHTS)		
-	if(channel == 4 and Plafo[channel].startup) {
-		DEBUG("===> chan: %d, curTime: %d, minsOn: %d, minsOff: %d, startup: %s, powerstate: %d\n",channel,curTime,minsOn,minsOff,Plafo[channel].startup?"Y":"N",Plafo[channel].powerState);
-	}
-#endif
-	
 	if(Plafo[channel].startup) {																// fase di startup
 		if(curTime >= minsOn and curTime < minsFA) {											// calcola il pwm in base a:
 			Plafo[channel].targetPwm = (float) pwmMax / (minsFA-minsOn) * (curTime-minsOn);		//  - alba
-			Plafo[channel].powerState = POWER_ON_INC;
 		} else if(curTime >= minsFA and curTime < minsIT) {
 			Plafo[channel].targetPwm = pwmMax;													// 	- luce piena
-			Plafo[channel].powerState = POWER_ON;
 		} else if(curTime >= minsIT and curTime < minsOff) {
 			Plafo[channel].targetPwm = (float) pwmMax / (minsOff-minsIT) * (minsOff-curTime);	// 	- tramonto
-			Plafo[channel].powerState = POWER_ON_DEC;
 		} else {
-			Plafo[channel].targetPwm = 0;
+			Plafo[channel].targetPwm = 0;														// 	- buio
+		}
+
+		if(pwmValue < Plafo[channel].targetPwm) {
+			Plafo[channel].powerState = POWER_ON_INC;
+		} else if(pwmValue > Plafo[channel].targetPwm) {
+			Plafo[channel].powerState = POWER_ON_DEC;
+		} else if(pwmValue == pwmMax) {
+			Plafo[channel].powerState = POWER_ON;
+		} else if(pwmValue == 0) {
 			Plafo[channel].powerState = POWER_OFF;
 		}
-		
+
 		if(fastTimeRun) {
 			pwmValue = Plafo[channel].targetPwm;
 			Plafo[channel].startup = false;
-		} else if(pwmValue < Plafo[channel].targetPwm) {							// and begins fading-up till max reached
-			if(((myMillis() - Plafo[channel].fadingTimer) >= FADING_INTERVAL)) {	
-				pwmValue += (1+int(pwmMax/64));										// calcola l'incremento pesato in base al pwmMax
-				Plafo[channel].fadingTimer = myMillis();
+		} else if(((myMillis() - Plafo[channel].fadingTimer) >= FADING_INTERVAL)) {	
+			if(pwmValue < Plafo[channel].targetPwm) {								// and begins fading-up till max reached
+				pwmValue += Plafo[channel].pwmIncrement;
+				if(pwmValue > Plafo[channel].targetPwm) pwmValue = Plafo[channel].targetPwm;
+			} else if(pwmValue > Plafo[channel].targetPwm) {						// and begins fading-up till max reached
+				pwmValue -= Plafo[channel].pwmIncrement;
+				if(pwmValue < 0) pwmValue = 0;
+			} else {
+				Plafo[channel].startup = false;
+				DEBUG("Exiting from light %d startup\n", channel+1);
 			}
-		} else {
-			Plafo[channel].startup = false;
-			DEBUG("Exiting from light %d startup\n", channel+1);
-		}
-		if(pwmValue > Plafo[channel].targetPwm) {
-			pwmValue = Plafo[channel].targetPwm;
+			Plafo[channel].fadingTimer = myMillis();
 		}
 	} else {
 		if(curTime < minsOn or curTime > minsOff) {										// fase di buio
@@ -411,9 +444,6 @@ uint16_t LightsHandlerModeAUTO( uint8_t channel, uint16_t pwmValue ) {
 				DEBUG("Light %d is now off\n", channel+1);
 			}
 		}
-		if(pwmValue > Plafo[channel].pwmMax) {
-			pwmValue = Plafo[channel].pwmMax;
-		}
 	}
 	return pwmValue;
 }
@@ -443,6 +473,7 @@ void LightsHandler() {
 }
 
 //-----------------------------------------------------------------------------
+#ifdef IR_REMOTE_KEYBOARD
 	
 void InfoLuci() {
 	static uint8_t begin = 0;
@@ -749,6 +780,8 @@ void ImpostaFunzLinee() {							// Impostazione del modo di funzionamento e dell
 	sprintf(buff, "Chan [%1d]:[%3s][%4d]", channel+1, decodePowerState(dbuff, Temp[channel].workingMode), Temp[channel].pwmMax); 
 	printString(buff, 0, 2);
 }
+
+#endif
 
 void PwmLightsInit() {
 	int menuitem;

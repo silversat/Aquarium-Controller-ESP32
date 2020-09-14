@@ -75,6 +75,20 @@ P(form_end_ok)	=	"<br><br><input type='submit' value='OK'></form>";
 P(label_init)	=	"<label>";
 P(label_end)	=	"</label>";
 
+P(req_ok)		=	">> OK when ready <<";
+P(req_refresh)	=	">> RESTART when ready <<";
+
 P(color_red)	=	"<font color=red><b>";
 P(color_blue)	=	"<font color=blue><b>";
 P(color_rest)	=	"</b></font>";
+P(color_full)	=	"<font color=red>Full</font>";
+P(color_dec)	=	"<font color=orange>Dec</font>";
+P(color_inc)	=	"<font color=orange>Inc</font>";
+P(color_dark)	=	"Dark";
+
+P(cal_ph_ph1)	=	"Put PH probe into the 4.0 or 7.0 buffer solution";
+P(cal_ph_ph2)	=	"Buffer solution";
+P(cal_ph_ph3)	=	"PH calibration ended... data saved";
+P(cal_ec_ph1)	=	"Put EC probe into 1413us or 12.88ms/cm buffer solution";
+P(cal_ec_ph2)	=	"";
+P(cal_ec_ph3)	=	"EC calibration ended... data saved";
