@@ -56,7 +56,6 @@ void WaterTurbidityHandler() {
 void TurbiditySensorInit() {
 	pinMode(PIN_TURBIDITY_SENSOR, INPUT); 
 #if defined SR_TURBIDITY
-	pinMode(SR_TURBIDITY, OUTPUT); 
 	relais(SR_TURBIDITY, RL_OFF); 
 #endif
 	ntu = 0;

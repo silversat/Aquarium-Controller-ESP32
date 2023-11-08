@@ -9,19 +9,14 @@
 #define DECAY		10
 
 void beepOn() {
-//	digitalWrite(PIN_BUZZER, BEEP_ON);
+	digitalWrite(PIN_BUZZER, BEEP_ON);
 }
 
 void beepOff() {
-//	digitalWrite(PIN_BUZZER, BEEP_OFF);
+	digitalWrite(PIN_BUZZER, BEEP_OFF);
 }
 
 void buzerrore() {
-/*	beepOn();
-	delay(ATTACK);
-	beepOff();
-	delay(DECAY);
-
 	beepOn();
 	delay(ATTACK);
 	beepOff();
@@ -30,10 +25,15 @@ void buzerrore() {
 	beepOn();
 	delay(ATTACK);
 	beepOff();
-*/
+	delay(DECAY);
+
+	beepOn();
+	delay(ATTACK);
+	beepOff();
+
 }
 
 void BuzzerInit() {
-//	pinMode(PIN_BUZZER, OUTPUT); 
-//	DEBUG("Buzzer OK\n");
+	pinMode(PIN_BUZZER, OUTPUT); 
+	DEBUG("Buzzer OK\n");
 }	

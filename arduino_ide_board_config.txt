@@ -1,0 +1,4 @@
+
+board:	NodeMCU-32S	(4 Mb)
+
+ESP32-16Mb => Board = SparkFun ESP32 Thing Plus

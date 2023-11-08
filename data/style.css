@@ -18,8 +18,8 @@
 
 .myDiv {
 	border: 1px outset blue;
-	width: 380px;
-	height: 120px;
+	width: 400px;
+	height: 240px;
 	background-color: white;    
 	text-align: left;
 }
@@ -98,7 +98,7 @@ th {
 	}
 
 .button {
-    width:100px;
+    width:150px;
     height:30px;
  	vertical-align:middle;
 	-moz-box-shadow:inset 0 1px 0 0 #fff;

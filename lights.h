@@ -44,7 +44,14 @@ typedef struct {
 } temp_data;
 
 bool 		lightSetupEnded = false;
-char*		plafoNames[] = {PLAFO_NAME_1, PLAFO_NAME_2, PLAFO_NAME_3, PLAFO_NAME_4, PLAFO_NAME_5, PLAFO_NAME_6};
+char*		plafoNames[] = {(char*)PLAFO_NAME_1, 
+							(char*)PLAFO_NAME_2, 
+							(char*)PLAFO_NAME_3, 
+							(char*)PLAFO_NAME_4, 
+							(char*)PLAFO_NAME_5, 
+							(char*)PLAFO_NAME_6
+							};
+							
 PlafoData 	Plafo[LIGHT_LINE_NUMBER];
 menu_type 	LightsMenu[LIGHT_LINE_NUMBER+2];
 

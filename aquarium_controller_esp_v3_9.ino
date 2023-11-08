@@ -26,11 +26,17 @@
 //		Compile with 	Board = ESP32 Dev Module
 //						Partition scheme = Default 4MB with spiffs (1.2MB App/1.5MB SPIFFS)
 //
+//						ESP32-16Mb => Board = SparkFun ESP32 Thing Plus
+//						Partition scheme = Default 6.5MB APP/OTA /  with 3.43 SPIFFS)
+//
+//		CHECKLIST:	1 - Boards.txt
+//					2 - variants/esp32thing_plus (or whatever) check pin 21 as SDA and 22 as SCL
+//
 //============================================================================================
-#define SK_VERSION				"3.9.8"
-#define SK_DATE					"12-09-2020"
+#define SK_VERSION				"3.9.14"
+#define SK_DATE					"08-11-2023"
 #define SK_AUTHOR				"c.benedetti"
-#define SK_FEATURE				"esp32"
+#define SK_FEATURE				"esp32e16"
 
 #define CONFIG_ASYNC_TCP_RUNNING_CORE	0
 #define ASYNC_TCP_SSL_ENABLED			0
@@ -126,7 +132,7 @@ char* 			modulename;
 char* 			admin_password;
 float 			tmed = 0;
 int 			deviceMode;
-int				ssidRequestTrigger = NULL;
+int				ssidRequestTrigger = -1;		// NULL
 bool			bSsid, bName, bAdmp;
 bool			otaEnabled = false;
 bool			otaInProgress = false;
@@ -184,7 +190,7 @@ void wsSendTime() {
 			time.tm_hour = datetime.tm_hour;
 			time.tm_min = datetime.tm_min;
 			time.tm_sec = datetime.tm_sec;
-			wsConnectedClientsSend("time", "TIME=%02d:%02d:%02d", time.tm_hour, time.tm_min, time.tm_sec);
+			wsConnectedClientsSend("time", "TIME=%02d:%02d:%02d", (uint8_t)time.tm_hour, (uint8_t)time.tm_min, (uint8_t)time.tm_sec);
 
 			if(time.tm_mday != datetime.tm_mday) {
 				time.tm_mday = datetime.tm_mday;
@@ -426,11 +432,11 @@ void calibrationRequestPH( uint32_t cli, uint8_t* data, size_t len ) {
 		webSocket.textAll(out);
 	} else if(phase == 2) {
 		String out;
-		float voltage = analogRead(PIN_PH_SENSOR) / ADC_RESOLUTION * 5000;	// read the PH voltage (0~3.0V)
-		if((voltage > 1322) and (voltage < 1678)) {					// buffer solution:7.0{
+		float voltage = analogRead(PIN_PH_SENSOR) / ADC_RESOLUTION * PH_REF_VOLTAGE;			// read the PH voltage (0~3.0V)
+		if((voltage > 1322) and (voltage < 1678)) {												// buffer solution:7.0{
 			nVoltage = voltage;
 			out = "7.0"+getP(brk)+getP(color_red)+getP(req_ok)+getP(color_rest);;
-		} else if((voltage > 1854) and (voltage < 2210)) {			//buffer solution:4.0
+		} else if((voltage > 1854) and (voltage < 2210)) {										//buffer solution:4.0
 			aVoltage = voltage;
 			out = "4.0"+getP(brk)+getP(color_red)+getP(req_ok)+getP(color_rest);;
 		} else {
@@ -471,8 +477,8 @@ void calibrationRequestEC( uint32_t cli, uint8_t* data, size_t len ) {
 		webSocket.textAll(out);
 	} else if(phase == 2) {	
 		String out = "CALEC="+getP(brk);
-		voltage = analogRead(PIN_EC_SENSOR) / ADC_RESOLUTION * 5000;	// read the EC voltage (0~3.4V)
-		KValue = ec.readEC(voltage, tmed);								// convert voltage to EC with temperature compensation
+		voltage = analogRead(PIN_EC_SENSOR) / ADC_RESOLUTION * EC_REF_VOLTAGE;	// read the EC voltage (0~3.4V)
+		KValue = ec.readEC(voltage, tmed);											// convert voltage to EC with temperature compensation
 		if(isnan(KValue)) {
 			out += "ERROR reading KValue, Try again"+getP(brk)+getP(color_red)+getP(req_refresh)+getP(color_rest);
 		} else {
@@ -547,9 +553,9 @@ void fastTimeRunJump( uint8_t* data, size_t len ) {
 
 void handleWebSocketRequests() {
 	if(webSocket.count() > 0) {
-		if(ssidRequestTrigger != NULL) {						// websocket ssid request handler
+		if(ssidRequestTrigger != -1) {							// websocket ssid request handler
 			int cli = ssidRequestTrigger;
-			ssidRequestTrigger = NULL;							// reset trigger
+			ssidRequestTrigger = -1;							// reset trigger
 			int result = WiFi.scanNetworks();
 			String buff = "NETS=Networks found: " + String(result) + "<br>";
 			webSocket.text(cli, buff);
@@ -601,7 +607,7 @@ void handleRestartTimer() {
 	}
 }
 
-bool resetRestartTimer() {
+void resetRestartTimer() {
 	restartTimer = millis();
 }
 
@@ -679,7 +685,7 @@ void loop()	{
 				datetime = getDateTime();
 	
 				LightsHandler();
-//				AlarmSireneHandle();
+				AlarmSireneHandle();
 				handleTimers();
 				wsDispatcher();
 				handleWebSocketRequests();
@@ -699,6 +705,7 @@ void loop()	{
 			}
 		} else if(deviceMode == DEVICE_MODE_AP) {
 			handleRestartTimer();
+			handleParametersSave(parameters_save);
 		}
 	}
 }
@@ -755,8 +762,14 @@ bool getNvramSSIDPSW() {
 
 		//----------------- read PASSWORD
 		readStaticMemoryString(buffer, readPos, NVRAM_SSID_PSWD_LEN);
+		
+//if(cnt==0) {
+//		nets[cnt].password = new char[20];
+//		strcpy(nets[cnt].password, "MoTePassaSpina$1959");		// password may be blank (?)
+//} else {
 		nets[cnt].password = new char[strlen(buffer)+1];
 		strcpy(nets[cnt].password, buffer);		// password may be blank (?)
+//}
 		readPos += NVRAM_SSID_PSWD_LEN;
 	}
 	return ret;
@@ -818,6 +831,7 @@ bool startNetwork() {
 		delay(500);
 	}
 	if(cnt > 0) {
+		WiFi.setAutoReconnect(true);
 		moduleIp = WiFi.localIP();
 #ifdef DEBUG_MESSAGES
 		byte mac[6];
@@ -866,7 +880,7 @@ bool startAP() {
 	return ret;
 }
 
-bool initSystemTimers() {
+void initSystemTimers() {
 	int iValue = readStaticMemory(NVRAM_RESTART_TIMER);
 	if(iValue < 10 or iValue > 240) iValue = 120;		// set default to 120 secs
 	restartTimerTarget = iValue*1000;
@@ -961,7 +975,7 @@ void initOTA( bool enable = true ) {
 	}
 }
 
-bool saveNvramSSIDPSW() {
+void saveNvramSSIDPSW() {
 	int writePos = NVRAM_SSID_PSWD;
 
 	for(int cnt = 0; cnt < NVRAM_SSID_PSWD_NUM; cnt++) {
@@ -1112,7 +1126,7 @@ void setup() {
 	//-------------------------------------------------------------
 	//---------------- CONFIG SYSTEM RESOLUTIONS ------------------
 	//-------------------------------------------------------------
-	analogReadResolution(ADC_RESOLUTION);
+	analogReadResolution(ADC_RES_BITS);
 	pwm_resolution = pow(2, PWM_BITS)-1; 
 	DEBUG("Analog ADC/DAC set to %d bits (resolution %d)\n", ADC_RES_BITS, int(ADC_RESOLUTION));
 	DEBUG("PWM set to %d bits, (resolution %d)\n", PWM_BITS, int(pwm_resolution));
@@ -1140,7 +1154,7 @@ void setup() {
 			initOTA();
 
 			DisplayInit();					// Initialize LCD/I2C display
-//			AlarmInit();					// Initialize automatic alarm sirene (arduino pro-mini)
+			AlarmInit();					// Initialize automatic alarm sirene (arduino pro-mini)
 			BuzzerInit();					// Initialize Buzzer
 			RelaisInit();					// Relais board init
 #ifdef IR_REMOTE_KEYBOARD
@@ -1703,4 +1717,4 @@ void printRefreshHeader( AsyncWebServerRequest *request, String url, int time, S
 	request->send(200, "text/html", buff);
 }
 
-//===================================== END OF HTML_HANDLERS===================================
+//===================================== END OF HTML_HANDLERS ===================================

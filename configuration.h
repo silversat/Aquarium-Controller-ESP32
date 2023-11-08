@@ -16,24 +16,25 @@
 //#define USE_RTC_DS3231
 #define USE_RTC_DS1307
 #define USE_RTC_NVRAM						// use 24c32 nvram on RTC board or EEPROM (if not defined)
+#define TIMEZONE					"CET-1CEST,M3.5.0,M10.5.0/3"	// Europe/Rome
 
 //============================ WIRE BUS DEFINITIONS
 #define WIRE_BUS_CLOCK				100000	// 100.000 - 400.000 Hz
 #define WIRE_BUS_TIMEOUT			50		// default 50mS
 
 //============================ 
-#define RELE_PARALLEL						// if defined, use a parallel rele board, otherwise use a serial i2c rele board (PCF8574)
-
 #define	HTTP_PORT					80
 #define PWM_FREQUENCY				5000
 #define PWM_BITS					10
-#define ADC_RESOLUTION				4095.0
-#define ADC_RES_BITS				12
+#define ADC_RES_BITS				10		// 12
+#define ADC_RESOLUTION				1023.0	// 4095.0
+#define PH_REF_VOLTAGE				3300	// mV reference for PH ADC
+#define EC_REF_VOLTAGE				5000	// mV reference for EC ADC
 
-#define	BLINK_TIMER					500		// blinking intervam mS
+#define	BLINK_TIMER					500		// blinking interval mS
 #define	MINUTES_PER_DAY				1440
 #define	MINUTES_PER_2DAYS			MINUTES_PER_DAY*2
-#define	SECONDS_PER_DAY				86400
+//#define	SECONDS_PER_DAY				86400	// redefined in RTClib.h
 #define	WS_POLL_TIMER				1000
 #define	MILLISECS_PER_MIN			60000
 #define	NOT_AVAILABLE				" N/A "
@@ -55,31 +56,35 @@
 //
 //	Arduino PIN configuration
 //
+//	pins 16 & 17 (RX2, TX2) are reserved to serial2 alarm communication
+//
 #define HELTEC_ONBOARD_LED		25
 
 #define LIGHT_PWM_CHANNELS		5		// number of PWM light channels
-#define PIN_LIGHT_PWM_1			4		// PWM pin for led line 1
-#define PIN_LIGHT_PWM_2			16		// PWM pin for led line 2
-#define PIN_LIGHT_PWM_3			17		// PWM pin for led line 3
+#define PIN_LIGHT_PWM_1			25		// PWM pin for led line 1
+#define PIN_LIGHT_PWM_2			26		// PWM pin for led line 2
+#define PIN_LIGHT_PWM_3			27		// PWM pin for led line 3
 #define PIN_LIGHT_PWM_4			18		// PWM pin for led line 4
 #define PIN_LIGHT_PWM_5			19		// PWM pin for led line 5
 
+//#define RELE_PARALLEL						// if defined, use a parallel rele board, otherwise use a serial i2c rele board (PCF8574)
+
 #define PIN_RELAIS_1			12		// WARNING: you must configure 'relaisPin' array in 'scheda_rele.h' according with these defines
-#define PIN_RELAIS_2			14		//		and SR_RELAIS_NUM into the relais board section below. these are for the parallel relais board
-#define PIN_RELAIS_3			27		
-#define PIN_RELAIS_4			26
+#define PIN_RELAIS_2			13		//		and SR_RELAIS_NUM into the relais board section below. these are for the parallel relais board
+#define PIN_RELAIS_3			14		
+#define PIN_RELAIS_4			15
 #define PIN_RELAIS_5			
 #define PIN_RELAIS_6			
 #define PIN_RELAIS_7			
 #define PIN_RELAIS_8			
 
-#define PIN_ONE_WIRE_BUS		33
+#define PIN_ONE_WIRE_BUS		5
 #define PIN_IR_RECEIVER			32
 #define PIN_TURBIDITY_SENSOR	35
 #define PIN_LEVEL_SENSOR		34
-#define PIN_PH_SENSOR			39
-#define PIN_EC_SENSOR			38
-#define PIN_BUZZER				37
+#define PIN_PH_SENSOR			36		// ADC1 channel 0
+#define PIN_EC_SENSOR			39		// ADC1 channel 3
+#define PIN_BUZZER				23
 
 //
 // relais board
@@ -89,7 +94,7 @@
 #define	SR_RELAIS_NUM			0x04
 #define	SR_WATER_HEATER			0x01		// water heater = relais #1
 #define	SR_WATER_LEVEL			0x02		// water level = relais #2
-//#define	SR_TURBIDITY			0x03		// turbidity relais #3
+#define	SR_TURBIDITY			0x03		// turbidity relais #3
 #define	SR_PH					0x04		// PH alarm relais #4
 #define	SR_EC					0x05		// EC alarm relais #5
 #define	SR_CO2_VALVE			0x06		// CO2 valve

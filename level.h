@@ -2,7 +2,7 @@
 //	LEVEL.h
 //
 bool levelSetupEnded = false;
-uint8_t Liquid_level = NULL;
+uint8_t Liquid_level;
 
 void WaterLevelHandler() {
 	if(levelSetupEnded) {
@@ -26,7 +26,6 @@ void WaterLevelHandler() {
 void LevelSensorInit() {
 	pinMode(PIN_LEVEL_SENSOR, INPUT_PULLUP); 
 #if defined SR_WATER_LEVEL
-	pinMode(SR_WATER_LEVEL, OUTPUT); 
 	relais(SR_WATER_LEVEL, RL_OFF); 
 #endif
 	Liquid_level = 0xAA;				// nonsense data

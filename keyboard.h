@@ -31,7 +31,7 @@
 #define IR_DUMMY			0x05 		//	dummy code (in link with OK and PLAY)
 
 #ifdef IR_REMOTE_KEYBOARD
-#include <irmp.c.h>
+#include <irmp.hpp>
 
 IRMP_DATA keyread;
 

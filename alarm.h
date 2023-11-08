@@ -3,9 +3,11 @@
 //
 // Dichiarazioni e funzione per i segnali acustici
 
+#define SERIAL_RX_PIN			16
+#define SERIAL_TX_PIN			17
 #define ALARM_SERIAL_BAUD		9600
-#define SIRENE_RESET_TIMER		3000			// ping period in miilis 
-#define PONG_RESPONSE_TIME		1000			// max response-wait-time in millis
+#define SIRENE_RESET_TIMER		5000			// ping period in miilis 
+#define PONG_RESPONSE_TIME		2000			// max response-wait-time in millis
 
 bool alarmStatus = false;
 bool AlarmSirenePresent = false;
@@ -18,9 +20,9 @@ String inputString;	     		    			// a string to hold incoming data
 void alarm( bool status, bool cycle ) {
 	if(AlarmSirenePresent) {
 		if(status) {
-//			Serial2.print("alarm_on");
+			Serial2.print("alarm_on");
 		} else {
-//			Serial2.print("no_alarm");
+			Serial2.print("no_alarm");
 		}
 	} else {	
 		if(status and cycle) {
@@ -31,7 +33,6 @@ void alarm( bool status, bool cycle ) {
 	}
 }
 
-/*
 void AlarmSireneHandle() {
 	if((millis() - sirene_millis > SIRENE_RESET_TIMER) or (millis() < sirene_millis)) {	
 		sirene_millis = millis();
@@ -64,9 +65,8 @@ void AlarmSireneHandle() {
 }
 
 void AlarmInit() {
-	Serial2.begin(ALARM_SERIAL_BAUD);			// serial port #2 used for automatic alarm system
-	delay(100);									// wait serial port to stabilize
+	Serial2.begin(ALARM_SERIAL_BAUD);//, SERIAL_8N1, SERIAL_RX_PIN, SERIAL_TX_PIN);			// serial port #2 used for automatic alarm system. default pin RX:16 TX:17
+	delay(100);																			// wait serial port to stabilize
 	Serial2.setTimeout(300); 
 	DEBUG("Alarm sirene OK: waiting for connection\n");
 }
-*/

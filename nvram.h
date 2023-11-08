@@ -85,6 +85,9 @@ char* readStaticMemoryString( char* buffer, int readPos, int maxChars ) {
 		}
 		i++;
 	}
+	if(buffer[i] != '\0') {
+		buffer[++i] = '\0';
+	}
 	return buffer;
 }	
 

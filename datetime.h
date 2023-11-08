@@ -334,6 +334,7 @@ tm ImpostaDataOra() {  						// Funzione per impostazione data
 			}
 			break;
 	}
+	return dtimp;
 }
 
 #endif
@@ -352,21 +353,14 @@ char* getNTPserver( char* ntpsrv ) {
 }
 
 void getNTPtime() {
-	const long  gmtOffset_sec = 3600;
-	const int   daylightOffset_sec = 3600;
-	/*
-		int    tm_sec;   //   Seconds [0,59]. 
-		int    tm_min;   //   Minutes [0,59]. 
-		int    tm_hour;  //   Hour [0,23]. 
-		int    tm_mday;  //   Day of month [1,31]. 
-		int    tm_mon;   //   Month of year [0,11]. 
-		int    tm_year;  //   Years since 1900. 
-		int    tm_wday;  //   Day of week [0,6] (Sunday =0). 
-		int    tm_yday;  //   Day of year [0,365]. 
-		int    tm_isdst; //   Daylight Savings flag. 
-	*/
+//	const long  gmtOffset_sec = 3600;
+//	const int   daylightOffset_sec = 3600;
+//	configTime(gmtOffset_sec, daylightOffset_sec, ntpserver);
+	
+	configTime(0, 0, ntpserver);
+	setenv("TZ", TIMEZONE, 1);	//  Now adjust the TZ.  Clock settings are adjusted to show the new local time
+	tzset();
 
-	configTime(gmtOffset_sec, daylightOffset_sec, ntpserver);
 }
 
 void RtcInit() {

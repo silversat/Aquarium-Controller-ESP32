@@ -1,10 +1,9 @@
 
-int checkI2CdeviceAddress( uint8_t beg_addr, uint8_t end_addr=NULL ) {
+int checkI2CdeviceAddress( uint8_t beg_addr, uint8_t end_addr ) {
 	uint8_t ret = -1;
 	// This function uses the return value of
 	// the Write.endTransmisstion to see if
 	// a device did acknowledge to the address.
-	if(end_addr == NULL) end_addr = beg_addr;
 	for(uint8_t addr = beg_addr; addr <= end_addr; addr++) {
 		Wire.beginTransmission(addr);
 		if(Wire.endTransmission() == 0) {
@@ -13,6 +12,19 @@ int checkI2CdeviceAddress( uint8_t beg_addr, uint8_t end_addr=NULL ) {
 		}
 		delay(10);
 	}
+	return ret;
+}
+
+int checkI2CdeviceAddress( uint8_t beg_addr ) {		// overloaded with only one address
+	uint8_t ret = -1;
+	// This function uses the return value of
+	// the Write.endTransmisstion to see if
+	// a device did acknowledge to the address.
+	Wire.beginTransmission(beg_addr);
+	if(Wire.endTransmission() == 0) {
+		ret = beg_addr;
+	}
+	delay(10);
 	return ret;
 }
 
@@ -135,62 +147,62 @@ char* toUppercase( char* input ) {
 char* decodeStatus(int status) {
 	switch(status) {
 		case WL_IDLE_STATUS:
-			return "IDLE";
+			return (char*)"IDLE";
 			break;
 		case WL_NO_SSID_AVAIL:
-			return "NO SSID AVAIL";
+			return (char*)"NO SSID AVAIL";
 			break;
 		case WL_SCAN_COMPLETED:
-			return "SCAN COMPLETED";
+			return (char*)"SCAN COMPLETED";
 			break;
 		case WL_CONNECTED:
-			return "CONNECTED";
+			return (char*)"CONNECTED";
 			break;
 		case WL_CONNECT_FAILED:
-			return "CONNECT FAILED";
+			return (char*)"CONNECT FAILED";
 			break;
 		case WL_CONNECTION_LOST:
-			return "CONNECTION LOST";
+			return (char*)"CONNECTION LOST";
 			break;
 		case WL_DISCONNECTED:
-			return "DISCONNECTED";
+			return (char*)"DISCONNECTED";
 			break;
 		case WL_NO_SHIELD:
-			return "[no shield detected]";
+			return (char*)"[no shield detected]";
 			break;
 		default:
-			return "[unknown]";
+			return (char*)"[unknown]";
 	}
 }
 
 char* decodeEncryption(int enc) {
 	switch(enc) {
 		case 0:
-			return "open";
+			return (char*)"open";
 			break;
 		case 1:
-			return "WEP";
+			return (char*)"WEP";
 			break;
 		case 2:
-			return "WPA_PSK";
+			return (char*)"WPA_PSK";
 			break;
 		case 3:
-			return "WPA2_PSK";
+			return (char*)"WPA2_PSK";
 			break;
 		case 4:
-			return "WPA_WPA2_PSK";
+			return (char*)"WPA_WPA2_PSK";
 			break;
 		case 5:
-			return "WPA2_ENTERPRISE";
+			return (char*)"WPA2_ENTERPRISE";
 			break;
 		case 7:
-			return "[none]";
+			return (char*)"[none]";
 			break;
 		case 8:
-			return "[auto]";
+			return (char*)"[auto]";
 			break;
 		default:
-			return "[unknown]";
+			return (char*)"[unknown]";
 	}
 }
 

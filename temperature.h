@@ -173,10 +173,11 @@ float WaterTemperatureHandler() {
 				if(dstatus == DS_IDLE) {
 					if(alarm_cycle) {
 						if(main_page == 0) {
-							if(Tsensor1 or Tsensor2) {
+							if((Tsensor1 or Tsensor2) and tempMed <= TEMP_ALLOWED_MAX) {
 								printString(ftoa(buff, tempMed), 3, 2);
 								printChar(0b011011111);
 							} else {
+//								printSpaces(7, 3, 2);
 								printString(NOT_AVAILABLE, 3, 2);
 							}
 						}
@@ -200,10 +201,11 @@ float WaterTemperatureHandler() {
 				
 			case DEFCON_5:
 				if(dstatus == DS_IDLE and main_page == 0) {
-					if(Tsensor1 or Tsensor2) {
+					if((Tsensor1 or Tsensor2) and tempMed <= TEMP_ALLOWED_MAX) {
 						printString(ftoa(buff, tempMed), 3, 2);
 						printChar(0b011011111);
 					} else {
+//						printSpaces(7, 3, 2);
 						printString(NOT_AVAILABLE, 3, 2);
 					}
 				}
@@ -239,7 +241,7 @@ void saveNvramTemperature() {
 }
 
 void TempSensorsInit() {
-	Tempacqua = readStaticMemoryInt(NVRAM_TEMP_ADDR) * 0.5;		// read desired water temp from nvram
+	Tempacqua = (float)readStaticMemoryInt(NVRAM_TEMP_ADDR) * 0.5;		// read desired water temp from nvram
 	if(Tempacqua > TEMP_ALLOWED_MAX) {
 		Tempacqua = TEMP_ALLOWED_DEFAULT;
 		DEBUG("System temp lost: using %s\n", ftoa(buff, Tempacqua));
@@ -272,7 +274,6 @@ void TempSensorsInit() {
 		}
 	}
 #if defined SR_WATER_HEATER
-	pinMode(SR_WATER_HEATER, OUTPUT); 
 	relais(SR_WATER_HEATER, RL_OFF); 
 #endif
 	tempSetupEnded = true;
