@@ -1,4 +1,4 @@
-# Aquarium-Controller-ESP32 v.3.9.8
+# Aquarium-Controller-ESP32 v.3.9.14
 
 <br>		This controller has been developed onto an ESP32 board.
 <br>		The hardware includes:
