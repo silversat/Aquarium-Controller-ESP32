@@ -18,6 +18,12 @@
 <br>
 <br>		Compile with 	Board = ESP32 Dev Module
 <br>						Partition scheme = Default 4MB with spiffs (1.2MB App/1.5MB SPIFFS)
-<br><br> v.3.9.8
+<br>						ESP32-16Mb => Board = SparkFun ESP32 Thing Plus
+<br>						Partition scheme = Default 6.5MB APP/OTA /  with 3.43 SPIFFS)
+<br>
+<br>		CHECKLIST:	1 - Boards.txt
+<br>      					2 - variants/esp32thing_plus (or whatever) check pin 21 as SDA and 22 as SCL
+<br>
+<br><br> v.3.9.14
 <br> - corrected issue that made mDNS and OTA not working together
 <br>
